@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame } from 'lucide-react';
+import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind } from 'lucide-react';
 
 // --- СЛОВАРИ ТЕРМИНОВ ---
 const DICT = {
@@ -138,6 +138,13 @@ export default function App() {
       background-color: var(--bg-base);
       color: var(--text-main);
     }
+    @keyframes dissolve {
+      0% { filter: blur(0); opacity: 1; transform: translateY(0) scale(1); }
+      100% { filter: blur(6px); opacity: 0; transform: translateY(-10px) scale(0.95); }
+    }
+    .dev-null-fade {
+      animation: dissolve 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
   `;
 
   const StyleInjection = () => <style>{cssVariables}</style>;
@@ -150,6 +157,18 @@ export default function App() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   
   const [newTaskInput, setNewTaskInput] = useState('');
+  const [devNullInput, setDevNullInput] = useState('');
+  const [isDevNullFading, setIsDevNullFading] = useState(false);
+
+  const handleDevNull = (e) => {
+    if (e.key === 'Enter' && devNullInput.trim()) {
+      setIsDevNullFading(true);
+      setTimeout(() => {
+        setDevNullInput('');
+        setIsDevNullFading(false);
+      }, 1200);
+    }
+  };
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [editInputValue, setEditInputValue] = useState('');
@@ -522,6 +541,22 @@ export default function App() {
               {cryoTasks.length === 0 && <div className="h-12 flex items-center text-[10px] uppercase tracking-widest" style={{ color: textMutedHex }}>{t('emptyCryo')}</div>}
             </div>
           </section>
+        </div>
+        {/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
+        <div className={`fixed bottom-6 right-6 left-6 md:left-auto md:w-80 z-40 bg-[var(--bg-header)] border border-[var(--border-strong)] p-3 shadow-2xl ${diagRadius}`}>
+          <div className="flex items-center gap-2">
+            <Wind className="w-4 h-4 shrink-0" style={{ color: textMutedHex }} />
+            <input 
+              type="text" 
+              value={devNullInput}
+              onChange={(e) => setDevNullInput(e.target.value)}
+              onKeyDown={handleDevNull}
+              disabled={isDevNullFading}
+              placeholder="/dev/null (сброс мыслей)..."
+              className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
+              style={{ color: textMutedHex }}
+            />
+          </div>
         </div>
       </main>
 
