@@ -161,13 +161,18 @@ export default function App() {
   const [isDevNullFading, setIsDevNullFading] = useState(false);
 
   const handleDevNull = (e) => {
-    if (e.key === 'Enter' && devNullInput.trim()) {
+    if (e.key === 'Enter' && devNullInput.trim() && !isDevNullFading) {
       setIsDevNullFading(true);
       setTimeout(() => {
         setDevNullInput('');
         setIsDevNullFading(false);
+        // Программно отключаем фокус, чтобы клавиатура уехала только после анимации
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur(); 
+        }
       }, 1200);
     }
+  };
   };
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
   const [editingNodeId, setEditingNodeId] = useState(null);
@@ -551,7 +556,7 @@ export default function App() {
               value={devNullInput}
               onChange={(e) => setDevNullInput(e.target.value)}
               onKeyDown={handleDevNull}
-              disabled={isDevNullFading}
+              readOnly={isDevNullFading}
               placeholder="/dev/null (сброс мыслей)..."
               className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
               style={{ color: textMutedHex }}
