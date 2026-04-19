@@ -434,9 +434,9 @@ export default function App() {
           <section className="lg:col-span-8 flex flex-col gap-4">
             
             {/* АБСОЛЮТНАЯ ЗАЩИТА ОТ ИНВЕРСИИ БРАУЗЕРА */}
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: textMainHex }}>
-              <Cpu className="w-4 h-4" />
-              <h2 className="uppercase tracking-widest text-xs font-semibold">{t('ram')}</h2>
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2">
+              <Cpu className="w-4 h-4" style={{ color: textMainHex }} />
+              <h2 className="uppercase tracking-widest text-xs font-semibold m-0" style={{ color: textMainHex }}>{t('ram')}</h2>
               <span className="ml-auto text-[10px]" style={{ color: textMutedHex }}>СЛОТЫ: {activeTasks.length}/2</span>
             </div>
             
@@ -489,9 +489,9 @@ export default function App() {
           <section className="lg:col-span-4 flex flex-col gap-4">
             
             {/* АБСОЛЮТНАЯ ЗАЩИТА ОТ ИНВЕРСИИ БРАУЗЕРА */}
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: textMutedHex }}>
-              <Snowflake className="w-4 h-4" />
-              <h2 className="uppercase tracking-widest text-xs font-semibold">{t('cryo')}</h2>
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2">
+              <Snowflake className="w-4 h-4" style={{ color: textMutedHex }} />
+              <h2 className="uppercase tracking-widest text-xs font-semibold m-0" style={{ color: textMutedHex }}>{t('cryo')}</h2>
             </div>
             
             <div className="flex flex-col gap-2">
