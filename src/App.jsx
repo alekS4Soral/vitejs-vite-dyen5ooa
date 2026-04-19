@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen } from 'lucide-react';
+import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame } from 'lucide-react';
 
 // --- СЛОВАРИ ТЕРМИНОВ ---
 const DICT = {
@@ -38,21 +38,24 @@ const DICT = {
 const DEFAULT_TASKS = [];
 const DEFAULT_LOG = [];
 
-// Иконки не сохраняем в localStorage, держим их статично для 3 слотов
-const DAEMON_ICONS = { d1: SquareActivity, d2: Droplet, d3: Battery };
+// Карта доступных иконок для кастомизации
+const ICON_MAP = {
+  SquareActivity, Droplet, Battery, Activity, Cpu, Snowflake, Zap, Terminal, Database, Archive, Heart, Target, Coffee, Star, Flame
+};
+
 const DAEMON_COLORS = { d1: '#a3e635', d2: '#22d3ee', d3: '#f97316' };
 
 const DAEMONS_INIT = {
-  d1: { label: 'KINEMATICS', current: 0, max: 10000, step: 1000 },
-  d2: { label: 'COOLANT', current: 0, max: 2000, step: 250 },
-  d3: { label: 'HARDWARE', current: 0, max: 1, step: 1 }
+  d1: { label: 'KINEMATICS', current: 0, max: 10000, step: 1000, iconName: 'SquareActivity' },
+  d2: { label: 'COOLANT', current: 0, max: 2000, step: 250, iconName: 'Droplet' },
+  d3: { label: 'HARDWARE', current: 0, max: 1, step: 1, iconName: 'Battery' }
 };
 
 const THEMES = {
-  cyan: { name: 'Cyan Core', accent: '#06b6d4', accentDim: 'rgba(6, 182, 212, 0.15)' },
-  green: { name: 'Matrix Green', accent: '#22c55e', accentDim: 'rgba(34, 197, 94, 0.15)' },
-  purple: { name: 'Deep Purple', accent: '#a855f7', accentDim: 'rgba(168, 85, 247, 0.15)' },
-  amber: { name: 'Amber Glow', accent: '#f59e0b', accentDim: 'rgba(245, 158, 11, 0.15)' },
+  cyan: { name: 'Cyan Core', accent: '#06b6d4', accentDim: 'rgba(6, 182, 212, 0.15)', text: '#000000' },
+  green: { name: 'Matrix Green', accent: '#22c55e', accentDim: 'rgba(34, 197, 94, 0.15)', text: '#000000' },
+  purple: { name: 'Deep Purple', accent: '#a855f7', accentDim: 'rgba(168, 85, 247, 0.15)', text: '#ffffff' },
+  amber: { name: 'Amber Glow', accent: '#f59e0b', accentDim: 'rgba(245, 158, 11, 0.15)', text: '#000000' },
 };
 
 const diagRadius = "rounded-tl-2xl rounded-br-2xl rounded-tr-sm rounded-bl-sm";
@@ -63,7 +66,6 @@ export default function App() {
   const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('cc_tasks')) || DEFAULT_TASKS);
   const [renderLog, setRenderLog] = useState(() => JSON.parse(localStorage.getItem('cc_log')) || DEFAULT_LOG);
   
-  // КРИТИЧЕСКИЙ ФИКС: Сохраняем состояние гиперфокуса
   const [systemState, setSystemState] = useState(() => localStorage.getItem('cc_state') || 'NORMAL'); 
   const [activeColliderTask, setActiveColliderTask] = useState(() => JSON.parse(localStorage.getItem('cc_active_task')) || null);
 
@@ -74,9 +76,29 @@ export default function App() {
     
     if (lastDate !== today) {
       localStorage.setItem('cc_date', today);
-      return DAEMONS_INIT; // Новый день - сброс
+      return DAEMONS_INIT; 
     }
-    return saved ? JSON.parse(saved) : DAEMONS_INIT;
+
+    // Подгрузка с безопасным слиянием (чтобы старые сохранения не крашили новые фичи)
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const restored = { ...DAEMONS_INIT };
+      Object.keys(parsed).forEach(key => {
+        if (restored[key]) {
+          restored[key] = {
+            ...restored[key],
+            current: parsed[key].current || 0,
+            label: parsed[key].label || DAEMONS_INIT[key].label,
+            max: parsed[key].max || DAEMONS_INIT[key].max,
+            step: parsed[key].step || DAEMONS_INIT[key].step,
+            iconName: parsed[key].iconName || DAEMONS_INIT[key].iconName
+          };
+        }
+      });
+      return restored;
+    }
+
+    return DAEMONS_INIT;
   });
 
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('cc_theme') || 'cyan');
@@ -100,6 +122,7 @@ export default function App() {
     
     root.style.setProperty('--os-accent', THEMES[currentTheme].accent);
     root.style.setProperty('--os-accent-dim', THEMES[currentTheme].accentDim);
+    root.style.setProperty('--os-accent-text', THEMES[currentTheme].text); 
     
     root.style.setProperty('--bg-base', isDark ? '#0c0c0e' : '#e4e4e7');
     root.style.setProperty('--bg-header', isDark ? '#141417' : '#d4d4d8');
@@ -329,7 +352,7 @@ export default function App() {
                 <Snowflake className="w-3 h-3" /> {t('cryo')}
               </button>
             </div>
-            <button onClick={finishCompilation} className={`text-xs uppercase font-bold tracking-widest px-6 py-3 flex items-center justify-center gap-2 active:opacity-80 transition-opacity ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: colorMode === 'dark' ? '#000' : '#fff' }}>
+            <button onClick={finishCompilation} className={`text-xs uppercase font-bold tracking-widest px-6 py-3 flex items-center justify-center gap-2 active:opacity-80 transition-opacity ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: 'var(--os-accent-text)' }}>
               <Zap className="w-4 h-4" /> FINISH
             </button>
           </div>
@@ -367,13 +390,13 @@ export default function App() {
 
         <div className="grid grid-cols-3 gap-2 md:gap-4">
           {Object.entries(daemons).map(([key, data]) => {
-            const Icon = DAEMON_ICONS[key];
+            const Icon = ICON_MAP[data.iconName] || ICON_MAP['SquareActivity'];
             const color = DAEMON_COLORS[key];
             const isDone = data.current >= data.max;
             
             return (
               <button key={key} onClick={() => interactDaemon(key)} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-2 md:p-3 relative overflow-hidden text-left active:opacity-70 transition-opacity ${diagRadius}`}>
-                <div className="absolute bottom-0 left-0 h-full transition-all duration-300 opacity-20" style={{ backgroundColor: isDone ? color : 'transparent', width: `${Math.min(100, (data.current / data.max) * 100)}%` }} />
+                <div className="absolute bottom-0 left-0 h-full transition-all duration-300 opacity-20" style={{ backgroundColor: color, width: `${Math.min(100, (data.current / data.max) * 100)}%` }} />
                 <div className="relative z-10 flex flex-col gap-1 md:flex-row md:justify-between md:items-center">
                   <div className="flex items-center gap-1.5 md:gap-2">
                     <Icon className="w-3 h-3 md:w-4 md:h-4" style={{ color: isDone ? color : 'var(--text-muted)' }} />
@@ -391,7 +414,6 @@ export default function App() {
 
       <main className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto relative">
         
-        {/* НОВАЯ ПОЗИЦИЯ КНОПКИ БУФЕРА */}
         <button onClick={() => setIsBufferOpen(true)} className={`w-full py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold shadow-sm ${diagRadius}`}>
           <Database className="w-4 h-4" style={{ color: 'var(--os-accent)' }} />
           {t('buffer')}
@@ -400,11 +422,13 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-safe">
           <section className="lg:col-span-8 flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2 text-[var(--text-main)]">
+            {/* ИСПРАВЛЕНО: Жесткий инлайн-стиль цвета заголовка RAM */}
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: 'var(--text-main)' }}>
               <Cpu className="w-4 h-4" />
               <h2 className="uppercase tracking-widest text-xs font-semibold">{t('ram')}</h2>
-              <span className="ml-auto text-[10px] text-[var(--text-muted)]">СЛОТЫ: {activeTasks.length}/2</span>
+              <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>СЛОТЫ: {activeTasks.length}/2</span>
             </div>
+            
             <div className="grid gap-4">
               {activeTasks.map(task => (
                 <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-4 md:p-5 relative flex flex-col gap-4 shadow-sm ${diagRadius}`}>
@@ -438,7 +462,7 @@ export default function App() {
                     <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[10px] uppercase px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] flex items-center gap-1.5 ${diagRadiusReverse}`}>
                       <Snowflake className="w-3 h-3" /> {t('cryo')}
                     </button>
-                    <button onClick={() => startCompilation(task)} className={`text-[10px] md:text-xs uppercase px-6 py-2.5 font-bold tracking-widest flex items-center gap-2 active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: colorMode === 'dark' ? '#000' : '#fff' }}>
+                    <button onClick={() => startCompilation(task)} className={`text-[10px] md:text-xs uppercase px-6 py-2.5 font-bold tracking-widest flex items-center gap-2 active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: 'var(--os-accent-text)' }}>
                       <Zap className="w-3 h-3" /> {t('render')}
                     </button>
                   </div>
@@ -451,10 +475,12 @@ export default function App() {
           </section>
 
           <section className="lg:col-span-4 flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2 text-[var(--text-muted)]">
+            {/* ИСПРАВЛЕНО: Жесткий инлайн-стиль цвета заголовка Cryo */}
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: 'var(--text-muted)' }}>
               <Snowflake className="w-4 h-4" />
               <h2 className="uppercase tracking-widest text-xs font-semibold">{t('cryo')}</h2>
             </div>
+            
             <div className="flex flex-col gap-2">
               {cryoTasks.map(task => (
                 <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-3 opacity-70 active:opacity-100 transition-opacity ${diagRadius}`}>
@@ -531,7 +557,7 @@ export default function App() {
                 </div>
                 <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-[var(--border-color)]">
                   <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>{t('cryo')}</button>
-                  <button onClick={() => { moveTask(task.id, 'ACTIVE_RAM'); closeModals(); }} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 border border-[var(--border-strong)] font-bold active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: colorMode === 'dark' ? '#000' : '#fff' }}>{t('ram')}</button>
+                  <button onClick={() => { moveTask(task.id, 'ACTIVE_RAM'); closeModals(); }} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 border border-[var(--border-strong)] font-bold active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: 'var(--os-accent-text)' }}>{t('ram')}</button>
                 </div>
               </div>
             ))}
@@ -589,7 +615,7 @@ export default function App() {
         </div>
       )}
 
-      {/* --- МОДАЛКА НАСТРОЕК (НОВАЯ) --- */}
+      {/* --- МОДАЛКА НАСТРОЕК --- */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] text-[var(--text-main)] transition-colors duration-300">
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
@@ -639,25 +665,44 @@ export default function App() {
               <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1">DAEMONS_CONFIG</div>
               
               {Object.keys(daemons).map(key => {
-                const Icon = DAEMON_ICONS[key];
                 const d = daemons[key];
+                const CurrentIcon = ICON_MAP[d.iconName] || ICON_MAP['SquareActivity'];
+                
                 return (
                   <div key={key} className={`bg-[var(--bg-panel)] p-3 border border-[var(--border-strong)] flex flex-col gap-3 ${diagRadius}`}>
                     <div className="flex items-center gap-2 mb-1">
-                      <Icon className="w-4 h-4" style={{ color: DAEMON_COLORS[key] }}/>
+                      <CurrentIcon className="w-4 h-4" style={{ color: DAEMON_COLORS[key] }}/>
                       <input 
                         value={d.label} onChange={(e) => updateDaemonConfig(key, 'label', e.target.value)}
                         className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs font-bold w-full text-[var(--text-main)] uppercase"
                       />
                     </div>
-                    <div className="flex gap-4">
-                      <div className="flex flex-col flex-1">
-                        <span className="text-[9px] text-[var(--text-muted)] mb-1">MAX VALUE</span>
-                        <input type="number" value={d.max} onChange={(e) => updateDaemonConfig(key, 'max', Number(e.target.value))} className="bg-[var(--bg-button)] border border-[var(--border-strong)] p-1 text-xs text-[var(--text-main)] outline-none" />
+                    
+                    {/* НОВОЕ: Выбор иконки (Скроллируемый ряд) */}
+                    <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      {Object.keys(ICON_MAP).map(iName => {
+                        const IconComp = ICON_MAP[iName];
+                        const isSelected = d.iconName === iName;
+                        return (
+                          <button
+                            key={iName}
+                            onClick={() => updateDaemonConfig(key, 'iconName', iName)}
+                            className={`p-1.5 border shrink-0 ${isSelected ? 'border-[var(--os-accent)] bg-[var(--bg-button-active)]' : 'border-[var(--border-strong)] bg-[var(--bg-button)] opacity-50'} ${diagRadiusReverse}`}
+                          >
+                            <IconComp className="w-3 h-3" style={{ color: isSelected ? DAEMON_COLORS[key] : 'var(--text-muted)' }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-[9px] text-[var(--text-muted)] mb-1 truncate">MAX VALUE</span>
+                        <input type="number" value={d.max} onChange={(e) => updateDaemonConfig(key, 'max', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs text-[var(--text-main)] outline-none rounded-sm" />
                       </div>
-                      <div className="flex flex-col flex-1">
-                        <span className="text-[9px] text-[var(--text-muted)] mb-1">STEP (+ per click)</span>
-                        <input type="number" value={d.step} onChange={(e) => updateDaemonConfig(key, 'step', Number(e.target.value))} className="bg-[var(--bg-button)] border border-[var(--border-strong)] p-1 text-xs text-[var(--text-main)] outline-none" />
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-[9px] text-[var(--text-muted)] mb-1 truncate">STEP (+ per click)</span>
+                        <input type="number" value={d.step} onChange={(e) => updateDaemonConfig(key, 'step', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs text-[var(--text-main)] outline-none rounded-sm" />
                       </div>
                     </div>
                   </div>
