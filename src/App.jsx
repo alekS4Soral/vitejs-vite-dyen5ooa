@@ -79,7 +79,6 @@ export default function App() {
       return DAEMONS_INIT; 
     }
 
-    // Подгрузка с безопасным слиянием (чтобы старые сохранения не крашили новые фичи)
     if (saved) {
       const parsed = JSON.parse(saved);
       const restored = { ...DAEMONS_INIT };
@@ -97,7 +96,6 @@ export default function App() {
       });
       return restored;
     }
-
     return DAEMONS_INIT;
   });
 
@@ -115,26 +113,34 @@ export default function App() {
   useEffect(() => { localStorage.setItem('cc_mode', colorMode); }, [colorMode]);
   useEffect(() => { localStorage.setItem('cc_term', terminology); }, [terminology]);
 
-  // Движок CSS переменных
-  useEffect(() => {
-    const root = document.documentElement;
-    const isDark = colorMode === 'dark';
-    
-    root.style.setProperty('--os-accent', THEMES[currentTheme].accent);
-    root.style.setProperty('--os-accent-dim', THEMES[currentTheme].accentDim);
-    root.style.setProperty('--os-accent-text', THEMES[currentTheme].text); 
-    
-    root.style.setProperty('--bg-base', isDark ? '#0c0c0e' : '#e4e4e7');
-    root.style.setProperty('--bg-header', isDark ? '#141417' : '#d4d4d8');
-    root.style.setProperty('--bg-panel', isDark ? '#18181b' : '#f4f4f5');
-    root.style.setProperty('--border-color', isDark ? 'rgba(63, 63, 70, 0.4)' : 'rgba(161, 161, 170, 0.5)');
-    root.style.setProperty('--border-strong', isDark ? '#27272a' : '#a1a1aa');
-    root.style.setProperty('--text-main', isDark ? '#d4d4d8' : '#27272a');
-    root.style.setProperty('--text-muted', isDark ? '#71717a' : '#52525b');
-    root.style.setProperty('--bg-button', isDark ? '#18181b' : '#d4d4d8');
-    root.style.setProperty('--bg-button-active', isDark ? '#27272a' : '#a1a1aa');
-  }, [currentTheme, colorMode]);
+  const isDark = colorMode === 'dark';
+  const textMainHex = isDark ? '#d4d4d8' : '#27272a';
+  const textMutedHex = isDark ? '#71717a' : '#52525b';
 
+  // Жесткая инъекция стилей для обхода мобильных браузеров
+  const cssVariables = `
+    :root {
+      --os-accent: ${THEMES[currentTheme].accent};
+      --os-accent-dim: ${THEMES[currentTheme].accentDim};
+      --os-accent-text: ${THEMES[currentTheme].text};
+      --bg-base: ${isDark ? '#0c0c0e' : '#e4e4e7'};
+      --bg-header: ${isDark ? '#141417' : '#d4d4d8'};
+      --bg-panel: ${isDark ? '#18181b' : '#f4f4f5'};
+      --border-color: ${isDark ? 'rgba(63, 63, 70, 0.4)' : 'rgba(161, 161, 170, 0.5)'};
+      --border-strong: ${isDark ? '#27272a' : '#a1a1aa'};
+      --text-main: ${textMainHex};
+      --text-muted: ${textMutedHex};
+      --bg-button: ${isDark ? '#18181b' : '#d4d4d8'};
+      --bg-button-active: ${isDark ? '#27272a' : '#a1a1aa'};
+      color-scheme: ${isDark ? 'dark' : 'light'};
+    }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+    }
+  `;
+
+  const StyleInjection = () => <style>{cssVariables}</style>;
   const t = (key) => DICT[terminology][key];
 
   // --- UI СТЕЙТЫ МОДАЛОК ---
@@ -287,8 +293,9 @@ export default function App() {
   // --- ЭКРАН ГИБЕРНАЦИИ ---
   if (systemState === 'SAFE_MODE') {
     return (
-      <div className="min-h-[100dvh] bg-[var(--bg-base)] flex flex-col items-center justify-center font-mono text-[var(--text-muted)] p-4">
-        <Power className="w-16 h-16 mb-8 opacity-50 animate-pulse" style={{ color: 'var(--text-main)' }} />
+      <div className="min-h-[100dvh] bg-[var(--bg-base)] flex flex-col items-center justify-center font-mono text-[var(--text-muted)] p-4 transition-colors duration-300">
+        <StyleInjection />
+        <Power className="w-16 h-16 mb-8 opacity-50 animate-pulse" style={{ color: textMainHex }} />
         <div className="tracking-[0.3em] text-center uppercase text-sm md:text-lg">{t('safeMode')}</div>
         <button onClick={() => setSystemState('NORMAL')} className={`mt-16 px-6 py-3 border border-[var(--border-strong)] text-[var(--text-muted)] active:bg-[var(--bg-panel)] uppercase text-xs tracking-widest ${diagRadius}`}>
           START
@@ -301,51 +308,53 @@ export default function App() {
   if (systemState === 'COMPILING') {
     return (
       <div className="min-h-[100dvh] bg-[var(--bg-base)] flex flex-col items-center justify-center font-mono p-4 md:p-8 transition-colors duration-300">
+        <StyleInjection />
         <Activity className="w-10 h-10 mb-6 animate-pulse opacity-50" style={{ color: 'var(--os-accent)' }} />
         
         <div className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-6 w-full max-w-2xl relative shadow-2xl ${diagRadius}`}>
-          <div className="text-[10px] md:text-xs tracking-widest mb-3 uppercase flex justify-between text-[var(--text-muted)]">
+          <div className="text-[10px] md:text-xs tracking-widest mb-3 uppercase flex justify-between" style={{ color: textMutedHex }}>
             <span>[ {activeColliderTask?.id} ] {t('compile')}</span>
             <span style={{ color: 'var(--os-accent)' }}>{activeColliderTask?.progress}%</span>
           </div>
-          <div className="text-lg md:text-2xl tracking-wide mb-6 text-[var(--text-main)]">{activeColliderTask?.title}</div>
+          <div className="text-lg md:text-2xl tracking-wide mb-6" style={{ color: textMainHex }}>{activeColliderTask?.title}</div>
           
           <div className="w-full h-1 mb-4 relative bg-[var(--bg-button)] rounded-full overflow-hidden">
             <div className="absolute top-0 left-0 h-full transition-all duration-300" style={{ backgroundColor: 'var(--os-accent)', width: `${activeColliderTask?.progress}%` }} />
           </div>
           
           <div className="flex gap-2 mb-8 text-[10px] md:text-xs">
-            <button onClick={() => updateProgress(-10)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>-10%</button>
-            <button onClick={() => updateProgress(10)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>+10%</button>
-            <button onClick={() => updateProgress(100 - activeColliderTask.progress)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ml-auto ${diagRadiusReverse}`}>MAX</button>
+            <button onClick={() => updateProgress(-10)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>-10%</button>
+            <button onClick={() => updateProgress(10)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>+10%</button>
+            <button onClick={() => updateProgress(100 - activeColliderTask.progress)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ml-auto ${diagRadiusReverse}`} style={{ color: textMainHex }}>MAX</button>
           </div>
 
           <div className="mb-8 border-l-2 border-[var(--border-strong)] pl-4 flex flex-col gap-3">
             {activeColliderTask?.subtasks?.map(sub => (
               <button key={sub.id} onClick={() => toggleSubtask(sub.id)} className="flex items-start gap-3 text-left">
                 <div className="mt-0.5">
-                  {sub.done ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--os-accent)' }} /> : <Square className="w-4 h-4 text-[var(--text-muted)]" />}
+                  {sub.done ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--os-accent)' }} /> : <Square className="w-4 h-4" style={{ color: textMutedHex }} />}
                 </div>
-                <span className={`text-sm ${sub.done ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{sub.text}</span>
+                <span className="text-sm" style={{ color: sub.done ? textMutedHex : textMainHex, textDecoration: sub.done ? 'line-through' : 'none' }}>{sub.text}</span>
               </button>
             ))}
             
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-[var(--text-muted)]">&gt;</span>
+              <span style={{ color: textMutedHex }}>&gt;</span>
               <input 
                 type="text" 
                 value={newSubtaskInput}
                 onChange={(e) => setNewSubtaskInput(e.target.value)}
                 onKeyDown={createSubtask}
                 placeholder="..."
-                className="bg-transparent border-none outline-none text-sm w-full font-mono text-[var(--text-main)] placeholder-[var(--text-muted)]"
+                className="bg-transparent border-none outline-none text-sm w-full font-mono placeholder-[var(--text-muted)]"
+                style={{ color: textMainHex }}
               />
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-10 pt-6 border-t border-[var(--border-strong)]">
             <div className="flex gap-2">
-              <button onClick={() => exitCompilation('ACTIVE_RAM')} className={`flex-1 text-[10px] md:text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] px-3 py-3 active:bg-[var(--bg-button-active)] flex items-center justify-center gap-2 ${diagRadius}`}>
+              <button onClick={() => exitCompilation('ACTIVE_RAM')} className={`flex-1 text-[10px] md:text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] px-3 py-3 active:bg-[var(--bg-button-active)] flex items-center justify-center gap-2 ${diagRadius}`} style={{ color: textMainHex }}>
                 <Pause className="w-3 h-3" /> {t('ram')}
               </button>
               <button onClick={() => exitCompilation('CRYO')} className={`flex-1 text-[10px] md:text-xs uppercase bg-[var(--bg-panel)] border border-[var(--border-strong)] px-3 py-3 active:bg-[var(--bg-button-active)] flex items-center justify-center gap-2 ${diagRadius}`} style={{ color: 'var(--os-accent)' }}>
@@ -364,22 +373,23 @@ export default function App() {
   // --- ГЛАВНЫЙ ЭКРАН ---
   return (
     <div className="h-[100dvh] bg-[var(--bg-base)] text-[var(--text-main)] font-mono flex flex-col overflow-hidden transition-colors duration-300">
+      <StyleInjection />
       <header className="flex-shrink-0 bg-[var(--bg-header)] border-b border-[var(--border-color)] p-4 pb-3 z-10 relative mt-safe transition-colors duration-300">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-3">
-            <Terminal className="w-4 h-4 md:w-5 md:h-5 text-[var(--text-muted)]" />
-            <div className="text-xs md:text-sm tracking-widest font-bold uppercase text-[var(--text-main)]">ColdCache<span style={{ color: 'var(--os-accent)' }}>.OS</span></div>
+            <Terminal className="w-4 h-4 md:w-5 md:h-5" style={{ color: textMutedHex }} />
+            <div className="text-xs md:text-sm tracking-widest font-bold uppercase" style={{ color: textMainHex }}>ColdCache<span style={{ color: 'var(--os-accent)' }}>.OS</span></div>
           </div>
           
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsManualOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-muted)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={() => setIsManualOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMutedHex }}>
               <BookOpen className="w-3 h-3" />
             </button>
-            <button onClick={() => setIsLogOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-muted)] active:bg-[var(--bg-button-active)] relative ${diagRadiusReverse}`}>
+            <button onClick={() => setIsLogOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] relative ${diagRadiusReverse}`} style={{ color: textMutedHex }}>
               <Archive className="w-3 h-3" />
               {renderLog.length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--os-accent)' }}></span>}
             </button>
-            <button onClick={() => setIsSettingsOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-muted)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={() => setIsSettingsOpen(true)} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMutedHex }}>
               <Settings className="w-3 h-3" />
             </button>
             <button onClick={() => setSystemState('SAFE_MODE')} className={`p-2 border border-red-900/30 text-red-500 active:bg-red-900/20 bg-red-900/10 ${diagRadiusReverse}`}>
@@ -399,10 +409,10 @@ export default function App() {
                 <div className="absolute bottom-0 left-0 h-full transition-all duration-300 opacity-20" style={{ backgroundColor: color, width: `${Math.min(100, (data.current / data.max) * 100)}%` }} />
                 <div className="relative z-10 flex flex-col gap-1 md:flex-row md:justify-between md:items-center">
                   <div className="flex items-center gap-1.5 md:gap-2">
-                    <Icon className="w-3 h-3 md:w-4 md:h-4" style={{ color: isDone ? color : 'var(--text-muted)' }} />
-                    <span className="text-[8px] md:text-[9px] uppercase tracking-widest truncate" style={{ color: isDone ? color : 'var(--text-muted)' }}>{data.label}</span>
+                    <Icon className="w-3 h-3 md:w-4 md:h-4" style={{ color: isDone ? color : textMutedHex }} />
+                    <span className="text-[8px] md:text-[9px] uppercase tracking-widest truncate" style={{ color: isDone ? color : textMutedHex }}>{data.label}</span>
                   </div>
-                  <span className="text-[10px]" style={{ color: isDone ? color : 'var(--text-main)', fontWeight: isDone ? 'bold' : 'normal' }}>
+                  <span className="text-[10px]" style={{ color: isDone ? color : textMainHex, fontWeight: isDone ? 'bold' : 'normal' }}>
                     {data.current}/{data.max}
                   </span>
                 </div>
@@ -414,7 +424,7 @@ export default function App() {
 
       <main className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto relative">
         
-        <button onClick={() => setIsBufferOpen(true)} className={`w-full py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold shadow-sm ${diagRadius}`}>
+        <button onClick={() => setIsBufferOpen(true)} className={`w-full py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold shadow-sm ${diagRadius}`} style={{ color: textMainHex }}>
           <Database className="w-4 h-4" style={{ color: 'var(--os-accent)' }} />
           {t('buffer')}
           {bufferTasks.length > 0 && <span className="px-2 py-0.5 rounded-sm bg-[var(--bg-button)] text-[10px] ml-2">{bufferTasks.length}</span>}
@@ -422,11 +432,12 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-safe">
           <section className="lg:col-span-8 flex flex-col gap-4">
-            {/* ИСПРАВЛЕНО: Жесткий инлайн-стиль цвета заголовка RAM */}
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: 'var(--text-main)' }}>
+            
+            {/* АБСОЛЮТНАЯ ЗАЩИТА ОТ ИНВЕРСИИ БРАУЗЕРА */}
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: textMainHex }}>
               <Cpu className="w-4 h-4" />
               <h2 className="uppercase tracking-widest text-xs font-semibold">{t('ram')}</h2>
-              <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>СЛОТЫ: {activeTasks.length}/2</span>
+              <span className="ml-auto text-[10px]" style={{ color: textMutedHex }}>СЛОТЫ: {activeTasks.length}/2</span>
             </div>
             
             <div className="grid gap-4">
@@ -436,7 +447,7 @@ export default function App() {
                   
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      <div className="text-[10px] tracking-widest mb-1.5 text-[var(--text-muted)]">{task.id}</div>
+                      <div className="text-[10px] tracking-widest mb-1.5" style={{ color: textMutedHex }}>{task.id}</div>
                       {editingNodeId === task.id ? (
                         <input 
                           autoFocus
@@ -444,22 +455,23 @@ export default function App() {
                           onChange={(e) => setEditInputValue(e.target.value)}
                           onKeyDown={handleEditKeyDown}
                           onBlur={saveEditNode}
-                          className="bg-transparent border-b border-[var(--border-strong)] outline-none text-sm md:text-base w-full font-mono text-[var(--text-main)]"
+                          className="bg-transparent border-b border-[var(--border-strong)] outline-none text-sm md:text-base w-full font-mono"
+                          style={{ color: textMainHex }}
                         />
                       ) : (
-                        <div className="text-sm md:text-base font-semibold text-[var(--text-main)] break-words pr-2">{task.title}</div>
+                        <div className="text-sm md:text-base font-semibold break-words pr-2" style={{ color: textMainHex }}>{task.title}</div>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <div className={`text-[10px] px-2 py-1 bg-[var(--bg-button)] border border-[var(--border-strong)] ${diagRadiusReverse}`} style={{ color: 'var(--os-accent)' }}>{task.progress}%</div>
                       {editingNodeId !== task.id && (
-                        <button onClick={() => startEditNode(task)} className="p-1 text-[var(--text-muted)] active:text-[var(--text-main)]"><Edit2 className="w-3 h-3"/></button>
+                        <button onClick={() => startEditNode(task)} className="p-1 active:opacity-70" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
                       )}
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-2 border-t border-[var(--border-color)] pt-4">
-                    <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[10px] uppercase px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] flex items-center gap-1.5 ${diagRadiusReverse}`}>
+                    <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[10px] uppercase px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] flex items-center gap-1.5 ${diagRadiusReverse}`} style={{ color: textMainHex }}>
                       <Snowflake className="w-3 h-3" /> {t('cryo')}
                     </button>
                     <button onClick={() => startCompilation(task)} className={`text-[10px] md:text-xs uppercase px-6 py-2.5 font-bold tracking-widest flex items-center gap-2 active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: 'var(--os-accent-text)' }}>
@@ -469,14 +481,15 @@ export default function App() {
                 </div>
               ))}
               {activeTasks.length === 0 && (
-                <div className={`h-24 border border-[var(--border-color)] border-dashed flex items-center justify-center text-[10px] uppercase tracking-widest text-[var(--text-muted)] ${diagRadius}`}>{t('emptyMem')}</div>
+                <div className={`h-24 border border-[var(--border-color)] border-dashed flex items-center justify-center text-[10px] uppercase tracking-widest ${diagRadius}`} style={{ color: textMutedHex }}>{t('emptyMem')}</div>
               )}
             </div>
           </section>
 
           <section className="lg:col-span-4 flex flex-col gap-4">
-            {/* ИСПРАВЛЕНО: Жесткий инлайн-стиль цвета заголовка Cryo */}
-            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: 'var(--text-muted)' }}>
+            
+            {/* АБСОЛЮТНАЯ ЗАЩИТА ОТ ИНВЕРСИИ БРАУЗЕРА */}
+            <div className="flex items-center gap-2 border-b border-[var(--border-strong)] pb-2" style={{ color: textMutedHex }}>
               <Snowflake className="w-4 h-4" />
               <h2 className="uppercase tracking-widest text-xs font-semibold">{t('cryo')}</h2>
             </div>
@@ -485,27 +498,28 @@ export default function App() {
               {cryoTasks.map(task => (
                 <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-3 opacity-70 active:opacity-100 transition-opacity ${diagRadius}`}>
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[9px] tracking-widest text-[var(--text-muted)]">{task.id}</span>
-                    <button onClick={() => startEditNode(task)} className="p-1 text-[var(--text-muted)]"><Edit2 className="w-3 h-3"/></button>
+                    <span className="text-[9px] tracking-widest" style={{ color: textMutedHex }}>{task.id}</span>
+                    <button onClick={() => startEditNode(task)} className="p-1" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
                   </div>
                   {editingNodeId === task.id ? (
                      <input 
                        autoFocus value={editInputValue} onChange={(e) => setEditInputValue(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={saveEditNode}
-                       className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs w-full font-mono text-[var(--text-main)] mb-3"
+                       className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs w-full font-mono mb-3"
+                       style={{ color: textMainHex }}
                      />
                   ) : (
-                    <div className="text-xs md:text-sm text-[var(--text-main)] mb-3 opacity-80">{task.title}</div>
+                    <div className="text-xs md:text-sm mb-3 opacity-80" style={{ color: textMainHex }}>{task.title}</div>
                   )}
                   
                   <div className="flex justify-between border-t border-[var(--border-color)] pt-2 items-center">
-                    <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="text-[10px] uppercase py-1 text-[var(--text-muted)] hover:text-red-500">{t('drop')}</button>
-                    <button onClick={() => moveTask(task.id, 'ACTIVE_RAM')} className={`text-[10px] uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] px-3 py-1 active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+                    <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="text-[10px] uppercase py-1 hover:text-red-500" style={{ color: textMutedHex }}>{t('drop')}</button>
+                    <button onClick={() => moveTask(task.id, 'ACTIVE_RAM')} className={`text-[10px] uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] px-3 py-1 active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>
                       {t('ram')}
                     </button>
                   </div>
                 </div>
               ))}
-              {cryoTasks.length === 0 && <div className="h-12 flex items-center text-[10px] uppercase tracking-widest text-[var(--text-muted)]">{t('emptyCryo')}</div>}
+              {cryoTasks.length === 0 && <div className="h-12 flex items-center text-[10px] uppercase tracking-widest" style={{ color: textMutedHex }}>{t('emptyCryo')}</div>}
             </div>
           </section>
         </div>
@@ -513,15 +527,15 @@ export default function App() {
 
       {/* --- МОДАЛКА БУФЕРА --- */}
       {isBufferOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] text-[var(--text-main)] transition-colors duration-300">
+        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
             <div className="flex items-center gap-3">
-              <Database className="w-5 h-5 text-[var(--text-muted)]" />
+              <Database className="w-5 h-5" style={{ color: textMutedHex }} />
               <div>
-                <div className="text-xs tracking-widest uppercase font-bold text-[var(--text-main)]">{t('buffer')}</div>
+                <div className="text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>{t('buffer')}</div>
               </div>
             </div>
-            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -534,7 +548,8 @@ export default function App() {
               onChange={(e) => setNewTaskInput(e.target.value)}
               onKeyDown={createNewTask}
               placeholder={`${t('inject')} (Enter)`}
-              className="bg-transparent border-none outline-none text-sm md:text-base w-full font-mono text-[var(--text-main)] placeholder-[var(--text-muted)]"
+              className="bg-transparent border-none outline-none text-sm md:text-base w-full font-mono placeholder-[var(--text-muted)]"
+              style={{ color: textMainHex }}
             />
           </div>
           
@@ -543,27 +558,28 @@ export default function App() {
               <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-4 flex flex-col justify-between ${diagRadius}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <div className="text-[9px] font-mono text-[var(--text-muted)]">{task.id}</div>
-                    <button onClick={() => startEditNode(task)} className="p-1 text-[var(--text-muted)]"><Edit2 className="w-3 h-3"/></button>
+                    <div className="text-[9px] font-mono" style={{ color: textMutedHex }}>{task.id}</div>
+                    <button onClick={() => startEditNode(task)} className="p-1" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
                   </div>
                   {editingNodeId === task.id ? (
                     <input 
                       autoFocus value={editInputValue} onChange={(e) => setEditInputValue(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={saveEditNode}
-                      className="bg-transparent border-b border-[var(--border-strong)] outline-none text-sm w-full font-mono text-[var(--text-main)]"
+                      className="bg-transparent border-b border-[var(--border-strong)] outline-none text-sm w-full font-mono"
+                      style={{ color: textMainHex }}
                     />
                   ) : (
-                    <div className="text-sm text-[var(--text-main)]">{task.title}</div>
+                    <div className="text-sm" style={{ color: textMainHex }}>{task.title}</div>
                   )}
                 </div>
                 <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-[var(--border-color)]">
-                  <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>{t('cryo')}</button>
+                  <button onClick={() => moveTask(task.id, 'CRYO')} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>{t('cryo')}</button>
                   <button onClick={() => { moveTask(task.id, 'ACTIVE_RAM'); closeModals(); }} className={`text-[9px] md:text-[10px] uppercase px-4 py-2 border border-[var(--border-strong)] font-bold active:opacity-80 ${diagRadiusReverse}`} style={{ backgroundColor: 'var(--os-accent)', color: 'var(--os-accent-text)' }}>{t('ram')}</button>
                 </div>
               </div>
             ))}
           </div>
           <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-header)] shrink-0 mb-safe">
-            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`}>
+            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`} style={{ color: textMainHex }}>
               CLOSE
             </button>
           </div>
@@ -572,16 +588,16 @@ export default function App() {
 
       {/* --- МОДАЛКА АРХИВА --- */}
       {isLogOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] text-[var(--text-main)] transition-colors duration-300">
+        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
             <div className="flex items-center gap-3">
-              <Archive className="w-5 h-5 text-[var(--text-muted)]" />
+              <Archive className="w-5 h-5" style={{ color: textMutedHex }} />
               <div>
-                <div className="text-xs tracking-widest uppercase font-bold text-[var(--text-main)]">{t('archive')}</div>
+                <div className="text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>{t('archive')}</div>
                 <div className="text-[9px] tracking-widest" style={{ color: 'var(--os-accent)' }}>DATA: {totalRenderedData} MB</div>
               </div>
             </div>
-            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -590,17 +606,17 @@ export default function App() {
             {renderLog.map((task, idx) => (
               <div key={idx} className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-3 flex justify-between items-center gap-4 ${diagRadius}`}>
                 <div className="flex-1">
-                  <div className="text-[9px] mb-1 font-mono flex gap-2 text-[var(--text-muted)]">
+                  <div className="text-[9px] mb-1 font-mono flex gap-2" style={{ color: textMutedHex }}>
                     <span>{task.completedAt}</span>
                     <span style={{ color: 'var(--os-accent)' }}>[{task.id}]</span>
                   </div>
-                  <div className="text-sm font-semibold text-[var(--text-main)]">{task.title}</div>
+                  <div className="text-sm font-semibold" style={{ color: textMainHex }}>{task.title}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => restoreFromArchive(task.id)} className="p-2 text-[var(--text-muted)] bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] rounded-sm" title="Restore to Cryo">
+                  <button onClick={() => restoreFromArchive(task.id)} className="p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] rounded-sm" style={{ color: textMutedHex }} title="Restore to Cryo">
                     <RotateCcw className="w-3 h-3" />
                   </button>
-                  <div className={`text-[10px] px-2 py-1 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold text-[var(--text-muted)] ${diagRadiusReverse}`}>
+                  <div className={`text-[10px] px-2 py-1 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold ${diagRadiusReverse}`} style={{ color: textMutedHex }}>
                     +{task.weight}MB
                   </div>
                 </div>
@@ -608,7 +624,7 @@ export default function App() {
             ))}
           </div>
           <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-header)] shrink-0 mb-safe">
-            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`}>
+            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`} style={{ color: textMainHex }}>
               CLOSE
             </button>
           </div>
@@ -617,25 +633,24 @@ export default function App() {
 
       {/* --- МОДАЛКА НАСТРОЕК --- */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] text-[var(--text-main)] transition-colors duration-300">
+        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
             <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-[var(--text-muted)]" />
-              <div className="text-xs tracking-widest uppercase font-bold text-[var(--text-main)]">{t('settings')}</div>
+              <Settings className="w-5 h-5" style={{ color: textMutedHex }} />
+              <div className="text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>{t('settings')}</div>
             </div>
-            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>
               <X className="w-4 h-4" />
             </button>
           </div>
           
           <div className="p-4 overflow-y-auto flex flex-col gap-8 flex-1">
             
-            {/* Глобальные параметры */}
             <div className="flex flex-col gap-4">
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1">GLOBAL_CONFIG</div>
+              <div className="text-[10px] uppercase tracking-widest border-b border-[var(--border-color)] pb-1" style={{ color: textMutedHex }}>GLOBAL_CONFIG</div>
               
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase">Color Scheme</span>
+                <span className="text-xs uppercase" style={{ color: textMainHex }}>Color Scheme</span>
                 <div className="flex gap-2">
                   {Object.keys(THEMES).map(tKey => (
                     <button key={tKey} onClick={() => setCurrentTheme(tKey)} className={`w-6 h-6 rounded-full border-2 ${currentTheme === tKey ? 'border-[var(--text-main)]' : 'border-transparent'}`} style={{ backgroundColor: THEMES[tKey].accent }} />
@@ -644,25 +659,24 @@ export default function App() {
               </div>
 
               <div className="flex items-center justify-between mt-2">
-                <span className="text-xs uppercase">Mode</span>
+                <span className="text-xs uppercase" style={{ color: textMainHex }}>Mode</span>
                 <div className="flex gap-2">
-                  <button onClick={() => setColorMode('dark')} className={`px-3 py-1 text-xs border ${colorMode === 'dark' ? 'border-[var(--os-accent)] text-[var(--os-accent)]' : 'border-[var(--border-strong)] text-[var(--text-muted)]'}`}>DARK</button>
-                  <button onClick={() => setColorMode('light')} className={`px-3 py-1 text-xs border ${colorMode === 'light' ? 'border-[var(--os-accent)] text-[var(--os-accent)]' : 'border-[var(--border-strong)] text-[var(--text-muted)]'}`}>LIGHT</button>
+                  <button onClick={() => setColorMode('dark')} className={`px-3 py-1 text-xs border ${colorMode === 'dark' ? 'border-[var(--os-accent)]' : 'border-[var(--border-strong)]'}`} style={{ color: colorMode === 'dark' ? 'var(--os-accent)' : textMutedHex }}>DARK</button>
+                  <button onClick={() => setColorMode('light')} className={`px-3 py-1 text-xs border ${colorMode === 'light' ? 'border-[var(--os-accent)]' : 'border-[var(--border-strong)]'}`} style={{ color: colorMode === 'light' ? 'var(--os-accent)' : textMutedHex }}>LIGHT</button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mt-2">
-                <span className="text-xs uppercase">Terminology</span>
+                <span className="text-xs uppercase" style={{ color: textMainHex }}>Terminology</span>
                 <div className="flex gap-2">
-                  <button onClick={() => setTerminology('system')} className={`px-3 py-1 text-xs border ${terminology === 'system' ? 'border-[var(--os-accent)] text-[var(--os-accent)]' : 'border-[var(--border-strong)] text-[var(--text-muted)]'}`}>SYSTEM</button>
-                  <button onClick={() => setTerminology('human')} className={`px-3 py-1 text-xs border ${terminology === 'human' ? 'border-[var(--os-accent)] text-[var(--os-accent)]' : 'border-[var(--border-strong)] text-[var(--text-muted)]'}`}>HUMAN</button>
+                  <button onClick={() => setTerminology('system')} className={`px-3 py-1 text-xs border ${terminology === 'system' ? 'border-[var(--os-accent)]' : 'border-[var(--border-strong)]'}`} style={{ color: terminology === 'system' ? 'var(--os-accent)' : textMutedHex }}>SYSTEM</button>
+                  <button onClick={() => setTerminology('human')} className={`px-3 py-1 text-xs border ${terminology === 'human' ? 'border-[var(--os-accent)]' : 'border-[var(--border-strong)]'}`} style={{ color: terminology === 'human' ? 'var(--os-accent)' : textMutedHex }}>HUMAN</button>
                 </div>
               </div>
             </div>
 
-            {/* Конструктор демонов */}
             <div className="flex flex-col gap-4">
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1">DAEMONS_CONFIG</div>
+              <div className="text-[10px] uppercase tracking-widest border-b border-[var(--border-color)] pb-1" style={{ color: textMutedHex }}>DAEMONS_CONFIG</div>
               
               {Object.keys(daemons).map(key => {
                 const d = daemons[key];
@@ -674,35 +688,39 @@ export default function App() {
                       <CurrentIcon className="w-4 h-4" style={{ color: DAEMON_COLORS[key] }}/>
                       <input 
                         value={d.label} onChange={(e) => updateDaemonConfig(key, 'label', e.target.value)}
-                        className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs font-bold w-full text-[var(--text-main)] uppercase"
+                        className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs font-bold w-full uppercase"
+                        style={{ color: textMainHex }}
                       />
                     </div>
                     
-                    {/* НОВОЕ: Выбор иконки (Скроллируемый ряд) */}
-                    <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {Object.keys(ICON_MAP).map(iName => {
-                        const IconComp = ICON_MAP[iName];
-                        const isSelected = d.iconName === iName;
-                        return (
-                          <button
-                            key={iName}
-                            onClick={() => updateDaemonConfig(key, 'iconName', iName)}
-                            className={`p-1.5 border shrink-0 ${isSelected ? 'border-[var(--os-accent)] bg-[var(--bg-button-active)]' : 'border-[var(--border-strong)] bg-[var(--bg-button)] opacity-50'} ${diagRadiusReverse}`}
-                          >
-                            <IconComp className="w-3 h-3" style={{ color: isSelected ? DAEMON_COLORS[key] : 'var(--text-muted)' }} />
-                          </button>
-                        );
-                      })}
+                    <div className="flex flex-col gap-1 mt-1">
+                      {/* ДОБАВЛЕН ЗАМЕТНЫЙ ЯРЛЫК ДЛЯ ВЫБОРА ИКОНКИ */}
+                      <span className="text-[9px] mb-1 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent)' }}>ICON SELECTOR</span>
+                      <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        {Object.keys(ICON_MAP).map(iName => {
+                          const IconComp = ICON_MAP[iName];
+                          const isSelected = d.iconName === iName;
+                          return (
+                            <button
+                              key={iName}
+                              onClick={() => updateDaemonConfig(key, 'iconName', iName)}
+                              className={`p-1.5 border shrink-0 ${isSelected ? 'border-[var(--os-accent)] bg-[var(--bg-button-active)]' : 'border-[var(--border-strong)] bg-[var(--bg-button)] opacity-50'} ${diagRadiusReverse}`}
+                            >
+                              <IconComp className="w-4 h-4" style={{ color: isSelected ? DAEMON_COLORS[key] : textMutedHex }} />
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 mt-1">
                       <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-[9px] text-[var(--text-muted)] mb-1 truncate">MAX VALUE</span>
-                        <input type="number" value={d.max} onChange={(e) => updateDaemonConfig(key, 'max', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs text-[var(--text-main)] outline-none rounded-sm" />
+                        <span className="text-[9px] mb-1 truncate" style={{ color: textMutedHex }}>MAX VALUE</span>
+                        <input type="number" value={d.max} onChange={(e) => updateDaemonConfig(key, 'max', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs outline-none rounded-sm" style={{ color: textMainHex }} />
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-[9px] text-[var(--text-muted)] mb-1 truncate">STEP (+ per click)</span>
-                        <input type="number" value={d.step} onChange={(e) => updateDaemonConfig(key, 'step', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs text-[var(--text-main)] outline-none rounded-sm" />
+                        <span className="text-[9px] mb-1 truncate" style={{ color: textMutedHex }}>STEP (+ per click)</span>
+                        <input type="number" value={d.step} onChange={(e) => updateDaemonConfig(key, 'step', e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-[var(--bg-button)] border border-[var(--border-strong)] p-1.5 text-xs outline-none rounded-sm" style={{ color: textMainHex }} />
                       </div>
                     </div>
                   </div>
@@ -712,7 +730,7 @@ export default function App() {
 
           </div>
           <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-header)] shrink-0 mb-safe">
-            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`}>
+            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`} style={{ color: textMainHex }}>
               APPLY & CLOSE
             </button>
           </div>
@@ -721,48 +739,48 @@ export default function App() {
 
       {/* --- МОДАЛКА МАНУАЛА --- */}
       {isManualOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] text-[var(--text-main)] transition-colors duration-300">
+        <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
             <div className="flex items-center gap-3">
-              <BookOpen className="w-5 h-5 text-[var(--text-muted)]" />
-              <div className="text-xs tracking-widest uppercase font-bold text-[var(--text-main)]">{t('manual')}</div>
+              <BookOpen className="w-5 h-5" style={{ color: textMutedHex }} />
+              <div className="text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>{t('manual')}</div>
             </div>
-            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`}>
+            <button onClick={closeModals} className={`p-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ${diagRadiusReverse}`} style={{ color: textMainHex }}>
               <X className="w-4 h-4" />
             </button>
           </div>
           
-          <div className="p-6 overflow-y-auto flex flex-col gap-6 flex-1 text-sm leading-relaxed">
+          <div className="p-6 overflow-y-auto flex flex-col gap-6 flex-1 text-sm leading-relaxed" style={{ color: textMainHex }}>
             <p>Добро пожаловать в <strong>ColdCache.OS</strong>. Это терминал управления когнитивной нагрузкой.</p>
             
             <div className="flex flex-col gap-2">
               <div className="font-bold text-[var(--os-accent)]">1. {t('buffer')} (Буфер)</div>
-              <p className="text-[var(--text-muted)]">Место для сброса хаоса. Возникла мысль или задача? Быстро записывай её сюда и закрывай терминал. Не держи в голове.</p>
+              <p style={{ color: textMutedHex }}>Место для сброса хаоса. Возникла мысль или задача? Быстро записывай её сюда и закрывай терминал. Не держи в голове.</p>
             </div>
 
             <div className="flex flex-col gap-2">
               <div className="font-bold text-[var(--os-accent)]">2. {t('ram')} (Слоты фокуса)</div>
-              <p className="text-[var(--text-muted)]">То, что ты делаешь прямо сейчас. Жесткий лимит — 2 слота. Если пытаешься взять третью задачу, система не даст этого сделать, пока не освободишь память.</p>
+              <p style={{ color: textMutedHex }}>То, что ты делаешь прямо сейчас. Жесткий лимит — 2 слота. Если пытаешься взять третью задачу, система не даст этого сделать, пока не освободишь память.</p>
             </div>
 
             <div className="flex flex-col gap-2">
               <div className="font-bold text-[var(--os-accent)]">3. {t('cryo')} (Отложенное)</div>
-              <p className="text-[var(--text-muted)]">Задачи, которые нужно сделать, но не сегодня или не сейчас. Замораживай их здесь, чтобы они не мозолили глаза в фокусе.</p>
+              <p style={{ color: textMutedHex }}>Задачи, которые нужно сделать, но не сегодня или не сейчас. Замораживай их здесь, чтобы они не мозолили глаза в фокусе.</p>
             </div>
 
             <div className="flex flex-col gap-2">
               <div className="font-bold text-[var(--os-accent)]">4. {t('render')} (Гиперфокус)</div>
-              <p className="text-[var(--text-muted)]">Когда нажимаешь эту кнопку, задача разворачивается на весь экран. Внутри можно создать чек-лист микро-шагов. Если свернуть приложение, состояние рендера сохранится.</p>
+              <p style={{ color: textMutedHex }}>Когда нажимаешь эту кнопку, задача разворачивается на весь экран. Внутри можно создать чек-лист микро-шагов. Если свернуть приложение, состояние рендера сохранится.</p>
             </div>
             
             <div className="flex flex-col gap-2">
               <div className="font-bold text-[var(--os-accent)]">5. Daemons (Трекеры)</div>
-              <p className="text-[var(--text-muted)]">Три верхние плашки для отслеживания рутины (шаги, вода, что угодно). Настраиваются индивидуально через меню параметров.</p>
+              <p style={{ color: textMutedHex }}>Три верхние плашки для отслеживания рутины (шаги, вода, что угодно). Настраиваются индивидуально через меню параметров.</p>
             </div>
           </div>
           
           <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-header)] shrink-0 mb-safe">
-            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] text-[var(--text-main)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`}>
+            <button onClick={closeModals} className={`w-full py-4 bg-[var(--bg-button)] border border-[var(--border-strong)] font-bold tracking-widest uppercase active:bg-[var(--bg-button-active)] ${diagRadius}`} style={{ color: textMainHex }}>
               ПОНЯТНО
             </button>
           </div>
