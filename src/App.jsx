@@ -161,14 +161,18 @@ export default function App() {
   const [isDevNullFading, setIsDevNullFading] = useState(false);
 
   const handleDevNull = (e) => {
+    // Проверяем, что нажат Enter, есть текст и анимация еще не идет
     if (e.key === 'Enter' && devNullInput.trim() && !isDevNullFading) {
       setIsDevNullFading(true);
+      
+      // Сама анимация длится 1.2 сек
       setTimeout(() => {
         setDevNullInput('');
         setIsDevNullFading(false);
-        // Программно отключаем фокус, чтобы клавиатура уехала только после анимации
+        
+        // Только теперь принудительно прячем клавиатуру
         if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur(); 
+          document.activeElement.blur();
         }
       }, 1200);
     }
@@ -562,9 +566,9 @@ export default function App() {
             <input 
               type="text" 
               value={devNullInput}
-              onChange={(e) => setDevNullInput(e.target.value)}
+              // Блокируем ввод символов, если идет анимация, но не выключаем само поле
+              onChange={(e) => { if (!isDevNullFading) setDevNullInput(e.target.value) }}
               onKeyDown={handleDevNull}
-              readOnly={isDevNullFading}
               placeholder="/dev/null (сброс мыслей)..."
               className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] text-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
             />
