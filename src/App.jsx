@@ -173,7 +173,6 @@ export default function App() {
       }, 1200);
     }
   };
-  };
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [editInputValue, setEditInputValue] = useState('');
@@ -548,9 +547,18 @@ export default function App() {
           </section>
         </div>
         {/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
+        <style>{`
+          @keyframes dissolve {
+            0% { filter: blur(0); opacity: 1; transform: translateY(0) scale(1); }
+            100% { filter: blur(6px); opacity: 0; transform: translateY(-10px) scale(0.95); }
+          }
+          .dev-null-fade {
+            animation: dissolve 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+        `}</style>
         <div className={`fixed bottom-6 right-6 left-6 md:left-auto md:w-80 z-40 bg-[var(--bg-header)] border border-[var(--border-strong)] p-3 shadow-2xl ${diagRadius}`}>
-          <div className="flex items-center gap-2">
-            <Wind className="w-4 h-4 shrink-0" style={{ color: textMutedHex }} />
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <Wind className="w-4 h-4 shrink-0" />
             <input 
               type="text" 
               value={devNullInput}
@@ -558,8 +566,7 @@ export default function App() {
               onKeyDown={handleDevNull}
               readOnly={isDevNullFading}
               placeholder="/dev/null (сброс мыслей)..."
-              className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
-              style={{ color: textMutedHex }}
+              className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] text-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
             />
           </div>
         </div>
