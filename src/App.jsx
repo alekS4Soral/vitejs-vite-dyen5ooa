@@ -151,11 +151,12 @@ export default function App() {
   const t = (key) => DICT[terminology][key];
 
   // --- UI СТЕЙТЫ МОДАЛОК ---
+  
   const [isBufferOpen, setIsBufferOpen] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManualOpen, setIsManualOpen] = useState(false);
-  
+  const [isBufferReversed, setIsBufferReversed] = useState(true);
   const [newTaskInput, setNewTaskInput] = useState('');
   const [devNullInput, setDevNullInput] = useState('');
   const [isDevNullFading, setIsDevNullFading] = useState(false);
@@ -550,6 +551,10 @@ export default function App() {
             </div>
           </section>
         </div>
+
+        {/* Пространственный буфер, чтобы Dev/null не перекрывал Крио-задачи */}
+        <div className="h-28 shrink-0 pointer-events-none"></div>
+
         {/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
         <style>{`
           @keyframes dissolve {
@@ -602,10 +607,20 @@ export default function App() {
               className="bg-transparent border-none outline-none text-sm md:text-base w-full font-mono placeholder-[var(--text-muted)]"
               style={{ color: textMainHex }}
             />
+            <button 
+          onClick={() => setIsBufferReversed(!isBufferReversed)}
+          className={`px-3 py-1.5 border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] text-[10px] tracking-widest font-bold uppercase shrink-0 transition-colors ${diagRadiusReverse}`}
+          style={{ 
+            color: isBufferReversed ? 'var(--os-accent-text)' : textMutedHex,
+            backgroundColor: isBufferReversed ? 'var(--os-accent)' : 'transparent'
+          }}
+        >
+          {isBufferReversed ? 'NEW' : 'OLD'}
+        </button>
           </div>
           
           <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start flex-1">
-            {bufferTasks.map(task => (
+          {(isBufferReversed ? [...bufferTasks].reverse() : bufferTasks).map(task => (
               <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-4 flex flex-col justify-between ${diagRadius}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
