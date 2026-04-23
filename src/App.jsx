@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind } from 'lucide-react';
+import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind, ArrowUpDown } from 'lucide-react';
 
 // --- СЛОВАРИ ТЕРМИНОВ ---
 const DICT = {
@@ -242,6 +242,19 @@ export default function App() {
       background: linear-gradient(90deg, var(--os-accent-1) 0%, rgba(var(--os-accent-rgb), 0.5) 20%, transparent 100%);
       animation: beam-right 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
     }
+
+    @keyframes subtask-wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-1deg); }
+      75% { transform: rotate(1deg); }
+    }
+    .is-wiggly {
+      animation: subtask-wiggle 0.35s ease-in-out infinite;
+      cursor: grab;
+    }
+    .is-wiggly:active {
+      cursor: grabbing;
+    }
   `;
 
   const StyleInjection = () => <style>{cssVariables}</style>;
@@ -272,6 +285,11 @@ export default function App() {
   };
   
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
+  // Стейты для редактирования саброутин в рендере
+  const [isSubtasksEditMode, setIsSubtasksEditMode] = useState(false);
+  const [editingSubtaskId, setEditingSubtaskId] = useState(null);
+  const [editSubtaskValue, setEditSubtaskValue] = useState('');
+  const [draggedSubtaskId, setDraggedSubtaskId] = useState(null);
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [editInputValue, setEditInputValue] = useState('');
 
@@ -390,6 +408,62 @@ export default function App() {
     setActiveColliderTask(prev => ({ ...prev, progress: Math.min(100, Math.max(0, prev.progress + amount)) }));
   };
 
+  // --- ЛОГИКА РЕДАКТИРОВАНИЯ И СОРТИРОВКИ ПОДЗАДАЧ ---
+  const startEditSubtask = (subtask) => {
+    if (!isSubtasksEditMode) return;
+    setEditingSubtaskId(subtask.id);
+    setEditSubtaskValue(subtask.text);
+  };
+
+  const saveEditSubtask = () => {
+    if (editSubtaskValue.trim()) {
+      setActiveColliderTask(prev => ({
+        ...prev,
+        subtasks: prev.subtasks.map(s => s.id === editingSubtaskId ? { ...s, text: editSubtaskValue.trim() } : s)
+      }));
+    }
+    setEditingSubtaskId(null);
+  };
+
+  const handleSubtaskEditKeyDown = (e) => {
+    if (e.key === 'Enter') saveEditSubtask();
+    if (e.key === 'Escape') setEditingSubtaskId(null);
+  };
+
+  const handleDragStart = (e, id) => {
+    setDraggedSubtaskId(id);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => { if (e.target) e.target.style.opacity = '0.5'; }, 0);
+  };
+
+  const handleDragEnd = (e) => {
+    if (e.target) e.target.style.opacity = '1';
+    setDraggedSubtaskId(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedSubtaskId || draggedSubtaskId === targetId) return;
+
+    setActiveColliderTask(prev => {
+      const subtasks = [...(prev.subtasks || [])];
+      const draggedIdx = subtasks.findIndex(s => s.id === draggedSubtaskId);
+      const targetIdx = subtasks.findIndex(s => s.id === targetId);
+      
+      if (draggedIdx === -1 || targetIdx === -1) return prev;
+
+      const [draggedItem] = subtasks.splice(draggedIdx, 1);
+      subtasks.splice(targetIdx, 0, draggedItem);
+      
+      return { ...prev, subtasks };
+    });
+  };
+
   // --- ЛОГИКА ДЕМОНОВ ---
   const interactDaemon = (key) => {
     setDaemons(prev => {
@@ -465,14 +539,60 @@ export default function App() {
             <button onClick={() => updateProgress(100 - activeColliderTask.progress)} className={`px-3 py-2 bg-[var(--bg-button)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] ml-auto ${shapeSecondary}`} style={{ color: textMainHex }}>MAX</button>
           </div>
 
-          <div className="mb-8 border-l-2 border-[var(--border-strong)] pl-4 flex flex-col gap-3">
-            {activeColliderTask?.subtasks?.map(sub => (
-              <button key={sub.id} onClick={() => toggleSubtask(sub.id)} className="flex items-start gap-3 text-left">
-                <div className="mt-0.5">
+          <div className="mb-8 border-l-2 border-[var(--border-strong)] pl-4 flex flex-col gap-3 relative">
+            {activeColliderTask?.subtasks?.length > 0 && (
+              <button 
+                onClick={() => setIsSubtasksEditMode(!isSubtasksEditMode)} 
+                className={`absolute -left-[23px] top-0 p-1 bg-[var(--bg-base)] border transition-all z-10 ${isSubtasksEditMode ? 'border-accent' : 'border-[var(--border-strong)]'}`}
+                style={{ color: isSubtasksEditMode ? 'var(--os-accent-1)' : textMutedHex, borderRadius: '4px' }}
+                title="Режим пересборки узлов"
+              >
+                <Edit2 className="w-3 h-3" />
+              </button>
+            )}
+
+{activeColliderTask?.subtasks?.map(sub => (
+              <div 
+                key={sub.id} 
+                draggable={isSubtasksEditMode}
+                onDragStart={(e) => handleDragStart(e, sub.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, sub.id)}
+                className={`flex items-start gap-3 text-left transition-transform ${isSubtasksEditMode ? 'p-1 bg-[var(--bg-panel)] border border-[var(--border-strong)] border-dashed cursor-grab active:cursor-grabbing' : ''}`}
+                style={{ borderTopColor: draggedSubtaskId && draggedSubtaskId !== sub.id ? 'var(--border-strong)' : '' }}
+              >
+                {/* Контроллер перетаскивания (виден только в режиме редактирования) */}
+                {isSubtasksEditMode && (
+                  <div className="mt-0.5 shrink-0" style={{ color: textMutedHex }}>
+                    <ArrowUpDown className="w-4 h-4 opacity-70" />
+                  </div>
+                )}
+
+                {/* Статичный чекбокс */}
+                <div className="mt-0.5 cursor-pointer shrink-0" onClick={() => !isSubtasksEditMode && toggleSubtask(sub.id)}>
                   {sub.done ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} /> : <Square className="w-4 h-4" style={{ color: textMutedHex }} />}
                 </div>
-                <span className="text-sm" style={{ color: sub.done ? textMutedHex : textMainHex, textDecoration: sub.done ? 'line-through' : 'none' }}>{sub.text}</span>
-              </button>
+
+                {/* Текст саброутины с изолированной анимацией покачивания */}
+                <div className={`flex-1 cursor-text w-full min-w-0 ${isSubtasksEditMode ? 'is-wiggly' : ''}`} onClick={() => startEditSubtask(sub)}>
+                  {editingSubtaskId === sub.id ? (
+                    <input 
+                      autoFocus
+                      value={editSubtaskValue}
+                      onChange={(e) => setEditSubtaskValue(e.target.value)}
+                      onKeyDown={handleSubtaskEditKeyDown}
+                      onBlur={saveEditSubtask}
+                      className="bg-transparent border-b border-[var(--border-strong)] outline-none text-sm w-full font-mono"
+                      style={{ color: textMainHex }}
+                    />
+                  ) : (
+                    <div className="text-sm break-words" style={{ color: sub.done && !isSubtasksEditMode ? textMutedHex : textMainHex, textDecoration: sub.done && !isSubtasksEditMode ? 'line-through' : 'none' }}>
+                      {sub.text}
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
             
             <div className="flex items-center gap-2 mt-2">
@@ -492,7 +612,7 @@ export default function App() {
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-10 pt-6 border-t border-[var(--border-strong)]">
             <div className="flex gap-2">
               <button onClick={() => exitCompilation('ACTIVE_RAM')} className={`flex-1 text-[10px] md:text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] px-3 py-3 active:bg-[var(--bg-button-active)] flex items-center justify-center gap-2 ${shapePrimary}`} style={{ color: textMainHex }}>
-                <Pause className="w-3 h-3" /> {t('ram')}
+                <RotateCcw className="w-3 h-3" /> {terminology === 'system' ? 'BACK' : 'НАЗАД'}
               </button>
               <button onClick={() => exitCompilation('CRYO')} className={`flex-1 text-[10px] md:text-xs uppercase bg-[var(--bg-panel)] border border-[var(--border-strong)] px-3 py-3 active:bg-[var(--bg-button-active)] flex items-center justify-center gap-2 ${shapePrimary}`} style={{ color: 'var(--os-accent-1)' }}>
                 <Snowflake className="w-3 h-3" /> {t('cryo')}
