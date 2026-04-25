@@ -245,12 +245,14 @@ export default function App() {
 
     @keyframes subtask-wiggle {
       0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(-1deg); }
-      75% { transform: rotate(1deg); }
+      25% { transform: rotate(-1.5deg); }
+      75% { transform: rotate(1.5deg); }
     }
     .is-wiggly {
       animation: subtask-wiggle 0.35s ease-in-out infinite;
       cursor: grab;
+      display: inline-block; /* Теперь контейнер облегает текст */
+      transform-origin: center center; /* Точка вращения в центре текста */
     }
     .is-wiggly:active {
       cursor: grabbing;
@@ -404,6 +406,16 @@ export default function App() {
     });
   };
 
+  const deleteSubtask = (subId) => {
+    setActiveColliderTask(prev => {
+      const updatedSubtasks = prev.subtasks.filter(s => s.id !== subId);
+      const doneCount = updatedSubtasks.filter(s => s.done).length;
+      // Пересчитываем процент выполнения или оставляем текущий, если задач больше нет
+      const newProgress = updatedSubtasks.length > 0 ? Math.round((doneCount / updatedSubtasks.length) * 100) : prev.progress;
+      return { ...prev, subtasks: updatedSubtasks, progress: newProgress };
+    });
+  };
+
   const updateProgress = (amount) => {
     setActiveColliderTask(prev => ({ ...prev, progress: Math.min(100, Math.max(0, prev.progress + amount)) }));
   };
@@ -540,10 +552,11 @@ export default function App() {
           </div>
 
           <div className="mb-8 border-l-2 border-[var(--border-strong)] pl-4 flex flex-col gap-3 relative">
-            {activeColliderTask?.subtasks?.length > 0 && (
+          {activeColliderTask?.subtasks?.length > 0 && (
               <button 
                 onClick={() => setIsSubtasksEditMode(!isSubtasksEditMode)} 
-                className={`absolute -left-[23px] top-0 p-1 bg-[var(--bg-base)] border transition-all z-10 ${isSubtasksEditMode ? 'border-accent' : 'border-[var(--border-strong)]'}`}
+                /* Зафиксировали ширину и высоту (w-6 h-6), запретили сжатие/растяжение (shrink-0) */
+                className={`absolute -left-[30px] top-[-2px] w-6 h-6 flex items-center justify-center shrink-0 bg-[var(--bg-base)] border transition-all z-10 ${isSubtasksEditMode ? 'border-accent' : 'border-[var(--border-strong)]'}`}
                 style={{ color: isSubtasksEditMode ? 'var(--os-accent-1)' : textMutedHex, borderRadius: '4px' }}
                 title="Режим пересборки узлов"
               >
@@ -551,7 +564,7 @@ export default function App() {
               </button>
             )}
 
-{activeColliderTask?.subtasks?.map(sub => (
+            {activeColliderTask?.subtasks?.map(sub => (
               <div 
                 key={sub.id} 
                 draggable={isSubtasksEditMode}
@@ -559,12 +572,13 @@ export default function App() {
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, sub.id)}
-                className={`flex items-start gap-3 text-left transition-transform ${isSubtasksEditMode ? 'p-1 bg-[var(--bg-panel)] border border-[var(--border-strong)] border-dashed cursor-grab active:cursor-grabbing' : ''}`}
+                /* Добавлен items-center и p-2 для режима редактирования, чтобы элементы стояли ровно */
+                className={`flex items-start gap-3 text-left transition-transform ${isSubtasksEditMode ? 'p-2 bg-[var(--bg-panel)] border border-[var(--border-strong)] border-dashed cursor-grab active:cursor-grabbing items-center' : ''}`}
                 style={{ borderTopColor: draggedSubtaskId && draggedSubtaskId !== sub.id ? 'var(--border-strong)' : '' }}
               >
-                {/* Контроллер перетаскивания (виден только в режиме редактирования) */}
+                {/* Контроллер перетаскивания */}
                 {isSubtasksEditMode && (
-                  <div className="mt-0.5 shrink-0" style={{ color: textMutedHex }}>
+                  <div className="shrink-0 flex items-center justify-center" style={{ color: textMutedHex }}>
                     <ArrowUpDown className="w-4 h-4 opacity-70" />
                   </div>
                 )}
@@ -574,8 +588,8 @@ export default function App() {
                   {sub.done ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} /> : <Square className="w-4 h-4" style={{ color: textMutedHex }} />}
                 </div>
 
-                {/* Текст саброутины с изолированной анимацией покачивания */}
-                <div className={`flex-1 cursor-text w-full min-w-0 ${isSubtasksEditMode ? 'is-wiggly' : ''}`} onClick={() => startEditSubtask(sub)}>
+                {/* Текст саброутины. Класс покачивания перенесен во внутренний div */}
+                <div className={`flex-1 cursor-text w-full min-w-0`} onClick={() => startEditSubtask(sub)}>
                   {editingSubtaskId === sub.id ? (
                     <input 
                       autoFocus
@@ -587,11 +601,24 @@ export default function App() {
                       style={{ color: textMainHex }}
                     />
                   ) : (
-                    <div className="text-sm break-words" style={{ color: sub.done && !isSubtasksEditMode ? textMutedHex : textMainHex, textDecoration: sub.done && !isSubtasksEditMode ? 'line-through' : 'none' }}>
-                      {sub.text}
+                    <div className={`${isSubtasksEditMode ? 'is-wiggly' : ''}`}>
+                      <div className="text-sm break-words" style={{ color: sub.done && !isSubtasksEditMode ? textMutedHex : textMainHex, textDecoration: sub.done && !isSubtasksEditMode ? 'line-through' : 'none' }}>
+                        {sub.text}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* НОВАЯ КНОПКА: Удалить подзадачу (вынесена вправо с помощью ml-auto) */}
+                {isSubtasksEditMode && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); deleteSubtask(sub.id); }}
+                    className="shrink-0 p-1.5 ml-auto text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                    title="Удалить подзадачу"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
             
