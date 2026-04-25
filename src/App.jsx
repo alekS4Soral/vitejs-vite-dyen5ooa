@@ -243,19 +243,20 @@ export default function App() {
       animation: beam-right 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
     }
 
-    @keyframes subtask-wiggle {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(-1.5deg); }
-      75% { transform: rotate(1.5deg); }
+    @keyframes subtask-fade {
+      0%, 100% { opacity: 1; filter: blur(0px); }
+      50% { opacity: 0.5; filter: blur(0.5px); }
     }
-    .is-wiggly {
-      animation: subtask-wiggle 0.35s ease-in-out infinite;
+    .is-fading {
+      animation: subtask-fade 4.5s ease-in-out infinite;
       cursor: grab;
-      display: inline-block; /* Теперь контейнер облегает текст */
-      transform-origin: center center; /* Точка вращения в центре текста */
+      display: inline-block;
+      will-change: opacity, filter;
     }
-    .is-wiggly:active {
+    .is-fading:active {
       cursor: grabbing;
+      opacity: 0.8 !important; /* При захвате фиксируем яркость */
+      filter: blur(0px) !important;
     }
   `;
 
@@ -601,7 +602,7 @@ export default function App() {
                       style={{ color: textMainHex }}
                     />
                   ) : (
-                    <div className={`${isSubtasksEditMode ? 'is-wiggly' : ''}`}>
+                    <div className={`${isSubtasksEditMode ? 'is-fading' : ''}`}>
                       <div className="text-sm break-words" style={{ color: sub.done && !isSubtasksEditMode ? textMutedHex : textMainHex, textDecoration: sub.done && !isSubtasksEditMode ? 'line-through' : 'none' }}>
                         {sub.text}
                       </div>
