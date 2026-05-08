@@ -1,9 +1,9 @@
-import { Cpu, Edit2, Snowflake, Zap } from 'lucide-react';
+import { Cpu, Edit2, Clock, Snowflake, Zap } from 'lucide-react';
 
 export function ActiveRamPanel({
   t, textMainHex, textMutedHex, shapePrimary, shapeSecondary,
   activeTasks, editingNodeId, editInputValue, setEditInputValue,
-  handleEditKeyDown, saveEditNode, startEditNode, moveTask, startCompilation
+  handleEditKeyDown, saveEditNode, startEditNode, moveTask, startCompilation, onScheduleTask
 }) {
   return (
     <section className="lg:col-span-8 flex flex-col gap-4">
@@ -12,6 +12,7 @@ export function ActiveRamPanel({
         <h2 className="uppercase tracking-widest text-xs font-semibold m-0" style={{ color: textMainHex }}>{t('ram')}</h2>
         <span className="ml-auto text-[10px]" style={{ color: textMutedHex }}>СЛОТЫ: {activeTasks.length}/2</span>
       </div>
+      
       
       <div className="grid gap-4">
         {activeTasks.map(task => (
@@ -35,12 +36,19 @@ export function ActiveRamPanel({
                   <div className="text-sm md:text-base font-semibold break-words pr-2" style={{ color: textMainHex }}>{task.title}</div>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <div className={`text-[10px] px-2 py-1 bg-[var(--bg-button)] border border-[var(--border-strong)] ${shapeSecondary}`} style={{ color: 'var(--os-accent-1)' }}>{task.progress}%</div>
-                {editingNodeId !== task.id && (
-                  <button onClick={() => startEditNode(task)} className="p-1 active:opacity-70" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
-                )}
-              </div>
+              <div className="flex gap-2">
+  {/* Новая кнопка планирования */}
+  <button 
+    onClick={() => onScheduleTask(task)} 
+    className="p-1 hover:text-[var(--os-accent-1)] opacity-50 hover:opacity-100 transition-all"
+  >
+    <Clock className="w-3 h-3"/>
+  </button>
+
+  <button onClick={() => startEditNode(task)} className="p-1 opacity-50 hover:opacity-100">
+    <Edit2 className="w-3 h-3"/>
+  </button>
+</div>
             </div>
 
             <div className="flex justify-between items-center mt-2 border-t border-[var(--border-color)] pt-4">

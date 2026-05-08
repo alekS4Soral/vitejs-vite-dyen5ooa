@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind, ArrowUpDown } from 'lucide-react';
+import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Calendar, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind, ArrowUpDown } from 'lucide-react';
 import { DICT, DEFAULT_TASKS, DEFAULT_LOG, ICON_MAP, DAEMON_COLORS, DAEMONS_INIT, SHAPES } from './config/constants';
 import { useSystemConfig } from './hooks/useSystemConfig';
 import { useDaemons } from './hooks/useDaemons';
@@ -15,11 +15,14 @@ import { CryoStoragePanel } from './components/layout/CryoStoragePanel';
 import { CompilingScreen } from './components/screens/CompilingScreen';
 import { DevNullConsole } from './components/layout/DevNullConsole';
 import { StyleInjection } from './components/StyleInjection';
+import { TemporalFlux } from './components/layout/TemporalFlux';
+import { TemporalFluxModal } from './components/modals/TemporalFluxModal';
+import { ScheduleModal } from './components/modals/ScheduleModal';
 
 export default function App() {
   const { isReady, colorMode, setColorMode, terminology, setTerminology, uiShape, setUiShape, colorStyle, setColorStyle, accent1, setAccent1, accent2, setAccent2, glowLevel, setGlowLevel } = useSystemConfig();
   const { daemons, interactDaemon, updateDaemonConfig } = useDaemons();
-  const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress } = useCoreMemory();
+  const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule } = useCoreMemory();
 
   const isDark = colorMode === 'dark';
   const textMainHex = isDark ? '#d4d4d8' : '#27272a';
@@ -38,6 +41,9 @@ export default function App() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isBufferReversed, setIsBufferReversed] = useState(true);
   
+  const [isTemporalOpen, setIsTemporalOpen] = useState(false);
+  const [schedulingTask, setSchedulingTask] = useState(null); // Это для меню даты
+
   const [newTaskInput, setNewTaskInput] = useState('');
   const [devNullInput, setDevNullInput] = useState('');
   const [isDevNullFading, setIsDevNullFading] = useState(false);
@@ -248,6 +254,7 @@ if (systemState === 'SAFE_MODE') {
         handleDragEnd={handleDragEnd}
         handleDragOver={handleDragOver}
         handleDrop={handleDrop}
+        onScheduleTask={(task) => setSchedulingTask(task)}
       >
         <StyleInjection 
           accent1={accent1} accent2={accent2} colorStyle={colorStyle} 
@@ -286,11 +293,18 @@ if (systemState === 'SAFE_MODE') {
 
       <main className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto relative">
         
-        <button onClick={() => setIsBufferOpen(true)} className={`w-full py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
-          <Database className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} />
-          {t('buffer')}
-          {bufferTasks.length > 0 && <span className="px-2 py-0.5 rounded-sm bg-[var(--bg-button)] text-[10px] ml-2">{bufferTasks.length}</span>}
-        </button>
+      <div className="flex gap-4 shrink-0">
+  <button onClick={() => setIsBufferOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
+    <Database className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} />
+    {t('buffer')}
+    {bufferTasks.length > 0 && <span className="px-2 py-0.5 rounded-sm bg-[var(--bg-button)] text-[10px] ml-2">{bufferTasks.length}</span>}
+  </button>
+
+  <button onClick={() => setIsTemporalOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
+    <Calendar className="w-4 h-4" style={{ color: 'var(--os-accent-2)' }} />
+    TEMPORAL_FLUX
+  </button>
+</div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-safe">
           <ActiveRamPanel 
@@ -308,6 +322,7 @@ if (systemState === 'SAFE_MODE') {
             startEditNode={startEditNode}
             moveTask={moveTask}
             startCompilation={startCompilation}
+            onScheduleTask={(task) => setSchedulingTask(task)}
           />
 
           <CryoStoragePanel 
@@ -325,6 +340,7 @@ if (systemState === 'SAFE_MODE') {
             startEditNode={startEditNode}
             moveTask={moveTask}
             setTasks={setTasks}
+            onScheduleTask={(task) => setSchedulingTask(task)}
           />
         </div>
 
@@ -333,13 +349,39 @@ if (systemState === 'SAFE_MODE') {
 
 {/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
 <DevNullConsole 
-          shapePrimary={shapePrimary}
-          isDevNullFading={isDevNullFading}
-          devNullInput={devNullInput}
-          setDevNullInput={setDevNullInput}
-          handleDevNull={handleDevNull}
-        />
+  t={t}
+  textMutedHex={textMutedHex}
+  shapePrimary={shapePrimary}
+  isDevNullFading={isDevNullFading}
+  devNullInput={devNullInput}
+  setDevNullInput={setDevNullInput}
+  handleDevNull={handleDevNull}
+/>
 </main>
+
+{/* --- МОДАЛКА КАЛЕНДАРЯ --- */}
+{isTemporalOpen && (
+  <TemporalFluxModal
+    tasks={tasks}
+    onClose={() => setIsTemporalOpen(false)}
+    shapePrimary={shapePrimary}
+    shapeSecondary={shapeSecondary}
+    textMainHex={textMainHex}
+    textMutedHex={textMutedHex}
+  />
+)}
+
+{/* --- МЕНЮ НАЗНАЧЕНИЯ ДАТЫ --- */}
+{schedulingTask && (
+  <ScheduleModal
+    task={schedulingTask}
+    onClose={() => setSchedulingTask(null)}
+    onSave={updateTaskSchedule}
+    shapePrimary={shapePrimary}
+    textMainHex={textMainHex}
+    textMutedHex={textMutedHex}
+  />
+)}
 
      {/* --- МОДАЛКА БУФЕРА --- */}
      {isBufferOpen && (
@@ -363,6 +405,7 @@ if (systemState === 'SAFE_MODE') {
           handleEditKeyDown={handleEditKeyDown}
           saveEditNode={saveEditNode}
           moveTask={moveTask}
+          onScheduleTask={(task) => setSchedulingTask(task)}
         />
       )}
 

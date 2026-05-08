@@ -1,9 +1,9 @@
-import { Snowflake, Edit2 } from 'lucide-react';
+import { Snowflake, Edit2, Clock, Trash2 } from 'lucide-react';
 
 export function CryoStoragePanel({
   t, textMainHex, textMutedHex, shapePrimary, shapeSecondary,
   cryoTasks, editingNodeId, editInputValue, setEditInputValue,
-  handleEditKeyDown, saveEditNode, startEditNode, moveTask, setTasks
+  handleEditKeyDown, saveEditNode, startEditNode, moveTask, setTasks, onScheduleTask
 }) {
   return (
     <section className="lg:col-span-4 flex flex-col gap-4">
@@ -15,10 +15,17 @@ export function CryoStoragePanel({
       <div className="flex flex-col gap-2">
         {cryoTasks.map(task => (
           <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-3 opacity-70 active:opacity-100 transition-all ${shapePrimary}`}>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[9px] tracking-widest" style={{ color: textMutedHex }}>{task.id}</span>
-              <button onClick={() => startEditNode(task)} className="p-1" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
-            </div>
+            <div className="flex gap-2">
+  <button 
+    onClick={() => onScheduleTask(task)} 
+    className="p-1 hover:text-[var(--os-accent-1)] opacity-50 hover:opacity-100 transition-all"
+  >
+    <Clock className="w-3 h-3"/>
+  </button>
+  <button onClick={() => startEditNode(task)} className="p-1 opacity-50 hover:opacity-100">
+    <Edit2 className="w-3 h-3"/>
+  </button>
+</div>
             {editingNodeId === task.id ? (
                <input 
                  autoFocus value={editInputValue} onChange={(e) => setEditInputValue(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={saveEditNode}

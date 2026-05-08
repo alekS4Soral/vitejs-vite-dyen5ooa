@@ -1,10 +1,11 @@
-import { Database, Terminal, X, Edit2 } from 'lucide-react';
+import { Database, Terminal, X, Edit2, Clock } from 'lucide-react';
 
 export function BufferModal({ 
   closeModals, t, textMainHex, textMutedHex, shapePrimary, shapeSecondary, 
   bufferTasks, newTaskInput, setNewTaskInput, createNewTask, 
   isBufferReversed, setIsBufferReversed, 
-  startEditNode, editingNodeId, editInputValue, setEditInputValue, handleEditKeyDown, saveEditNode, moveTask 
+  startEditNode, editingNodeId, editInputValue, setEditInputValue, handleEditKeyDown, saveEditNode, moveTask,
+  onScheduleTask 
 }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
@@ -49,7 +50,14 @@ export function BufferModal({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="text-[9px] font-mono" style={{ color: textMutedHex }}>{task.id}</div>
-                <button onClick={() => startEditNode(task)} className="p-1" style={{ color: textMutedHex }}><Edit2 className="w-3 h-3"/></button>
+                <div className="flex gap-2">
+                  <button onClick={() => onScheduleTask(task)} className="p-1 hover:text-[var(--os-accent-1)] transition-colors" style={{ color: textMutedHex }}>
+                    <Clock className="w-3 h-3"/>
+                  </button>
+                  <button onClick={() => startEditNode(task)} className="p-1" style={{ color: textMutedHex }}>
+                    <Edit2 className="w-3 h-3"/>
+                  </button>
+                </div>
               </div>
               {editingNodeId === task.id ? (
                 <input 
@@ -59,6 +67,11 @@ export function BufferModal({
                 />
               ) : (
                 <div className="text-sm" style={{ color: textMainHex }}>{task.title}</div>
+              )}
+              {task.scheduledDate && (
+                <div className="text-[9px] mt-2 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent-2)' }}>
+                  SYNC: {task.scheduledDate} {task.scheduledTime}
+                </div>
               )}
             </div>
             <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-[var(--border-color)]">

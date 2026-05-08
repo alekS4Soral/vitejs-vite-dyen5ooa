@@ -25,6 +25,13 @@ export function useCoreMemory() {
     });
   };
 
+  // Новая функция для планирования
+  const updateTaskSchedule = (taskId, date, time) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, scheduledDate: date, scheduledTime: time } : task
+    ));
+  };
+  
   const restoreFromArchive = (taskId) => {
     const taskToRestore = renderLog.find(t => t.id === taskId);
     if (taskToRestore) {
@@ -80,6 +87,6 @@ export function useCoreMemory() {
 
   return {
     tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask,
-    moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress
+    moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule
   };
 }
