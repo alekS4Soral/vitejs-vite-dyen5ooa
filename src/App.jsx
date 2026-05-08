@@ -17,7 +17,7 @@ import { DevNullConsole } from './components/layout/DevNullConsole';
 import { StyleInjection } from './components/StyleInjection';
 
 export default function App() {
-  const { colorMode, setColorMode, terminology, setTerminology, uiShape, setUiShape, colorStyle, setColorStyle, accent1, setAccent1, accent2, setAccent2, glowLevel, setGlowLevel } = useSystemConfig();
+  const { isReady, colorMode, setColorMode, terminology, setTerminology, uiShape, setUiShape, colorStyle, setColorStyle, accent1, setAccent1, accent2, setAccent2, glowLevel, setGlowLevel } = useSystemConfig();
   const { daemons, interactDaemon, updateDaemonConfig } = useDaemons();
   const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress } = useCoreMemory();
 
@@ -182,6 +182,15 @@ export default function App() {
   const activeTasks = tasks.filter(t => t.state === 'ACTIVE_RAM');
   const cryoTasks = tasks.filter(t => t.state === 'CRYO');
   const bufferTasks = tasks.filter(t => t.state === 'BUFFER');
+
+// --- БАРЬЕР ЗАГРУЗКИ ПРОТОКОЛОВ ---
+if (!isReady) {
+  return (
+    <div className="h-[100dvh] bg-[#0c0c0e] text-[#06b6d4] flex items-center justify-center font-mono text-sm tracking-widest uppercase">
+      Инициализация протоколов...
+    </div>
+  );
+}
 
 // --- ЭКРАН ГИБЕРНАЦИИ ---
 if (systemState === 'SAFE_MODE') {
