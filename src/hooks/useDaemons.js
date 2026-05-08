@@ -6,29 +6,33 @@ export function useDaemons() {
     const saved = localStorage.getItem('cc_daemons');
     const lastDate = localStorage.getItem('cc_date');
     const today = new Date().toDateString();
-    
-    if (lastDate !== today) {
-      localStorage.setItem('cc_date', today);
-      return DAEMONS_INIT; 
-    }
 
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const restored = { ...DAEMONS_INIT };
-      Object.keys(parsed).forEach(key => {
-        if (restored[key]) {
-          restored[key] = {
-            ...restored[key],
-            current: parsed[key].current || 0,
-            label: parsed[key].label || DAEMONS_INIT[key].label,
-            max: parsed[key].max || DAEMONS_INIT[key].max,
-            step: parsed[key].step || DAEMONS_INIT[key].step,
-            iconName: parsed[key].iconName || DAEMONS_INIT[key].iconName
+    // Функция для слияния сохраненных настроек с дефолтными
+    const mergeWithSaved = (parsedSaved, resetCurrent = false) => {
+      const result = { ...DAEMONS_INIT };
+      Object.keys(parsedSaved).forEach(key => {
+        if (result[key]) {
+          result[key] = {
+            ...result[key],
+            label: parsedSaved[key].label || DAEMONS_INIT[key].label,
+            max: parsedSaved[key].max || DAEMONS_INIT[key].max,
+            step: parsedSaved[key].step || DAEMONS_INIT[key].step,
+            iconName: parsedSaved[key].iconName || DAEMONS_INIT[key].iconName,
+            // Если требуется сброс (смена дня), ставим 0, иначе берем сохраненное
+            current: resetCurrent ? 0 : (parsedSaved[key].current || 0)
           };
         }
       });
-      return restored;
+      return result;
+    };
+
+    if (lastDate !== today) {
+      localStorage.setItem('cc_date', today);
+      if (saved) return mergeWithSaved(JSON.parse(saved), true); // Сбрасываем только прогресс
+      return DAEMONS_INIT;
     }
+
+    if (saved) return mergeWithSaved(JSON.parse(saved), false); // Ничего не сбрасываем
     return DAEMONS_INIT;
   });
 

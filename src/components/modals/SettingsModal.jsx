@@ -1,4 +1,5 @@
-import { Settings, X } from 'lucide-react';
+import { useRef } from 'react';
+import { Settings, X, Download, Upload } from 'lucide-react';
 import { ICON_MAP, DAEMON_COLORS } from '../../config/constants';
 
 export function SettingsModal({
@@ -7,6 +8,42 @@ export function SettingsModal({
   uiShape, setUiShape, glowLevel, setGlowLevel, colorMode, setColorMode,
   terminology, setTerminology, daemons, updateDaemonConfig
 }) {
+  const fileInputRef = useRef(null);
+
+  const handleExportMemory = () => {
+    const memoryDump = {
+      tasks: JSON.parse(localStorage.getItem('cc_tasks') || '[]'),
+      log: JSON.parse(localStorage.getItem('cc_log') || '[]')
+    };
+    const blob = new Blob([JSON.stringify(memoryDump, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coldcache_dump_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportMemory = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (data.tasks && data.log) {
+          localStorage.setItem('cc_tasks', JSON.stringify(data.tasks));
+          localStorage.setItem('cc_log', JSON.stringify(data.log));
+          window.location.reload(); // Перезагрузка для применения новых массивов
+        } else {
+          alert('SYSTEM ERROR: Несовместимый формат дампа.');
+        }
+      } catch (err) {
+        alert('SYSTEM ERROR: Повреждение структуры файла.');
+      }
+    };
+    reader.readAsText(file);
+  };
   return (
     <div className="fixed inset-0 z-50 flex flex-col font-mono bg-[var(--bg-base)] transition-colors duration-300">
       <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
@@ -87,6 +124,23 @@ export function SettingsModal({
               <button onClick={() => setTerminology('system')} className={`px-3 py-1 text-xs border transition-colors ${terminology === 'system' ? 'border-accent' : 'border-[var(--border-strong)]'}`} style={{ color: terminology === 'system' ? 'var(--os-accent-1)' : textMutedHex }}>SYSTEM</button>
               <button onClick={() => setTerminology('human')} className={`px-3 py-1 text-xs border transition-colors ${terminology === 'human' ? 'border-accent' : 'border-[var(--border-strong)]'}`} style={{ color: terminology === 'human' ? 'var(--os-accent-1)' : textMutedHex }}>HUMAN</button>
             </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="text-[10px] uppercase tracking-widest border-b border-[var(--border-color)] pb-1" style={{ color: textMutedHex }}>MEMORY_MANAGEMENT</div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={handleExportMemory} className={`p-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] flex flex-col items-center gap-2 hover:border-accent transition-colors ${shapeSecondary}`}>
+              <Download className="w-5 h-5" style={{ color: textMainHex }} />
+              <span className="text-[10px] uppercase font-bold" style={{ color: textMutedHex }}>EXPORT DUMP</span>
+            </button>
+            
+            <button onClick={() => fileInputRef.current?.click()} className={`p-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] flex flex-col items-center gap-2 hover:border-accent transition-colors ${shapeSecondary}`}>
+              <Upload className="w-5 h-5" style={{ color: textMainHex }} />
+              <span className="text-[10px] uppercase font-bold" style={{ color: textMutedHex }}>IMPORT DUMP</span>
+            </button>
+            <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportMemory} className="hidden" />
           </div>
         </div>
 
