@@ -5,6 +5,32 @@ export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shap
   const [mode, setMode] = useState('STREAM');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
+  const [touchStart, setTouchStart] = useState({ x: null, y: null });
+  const [touchEnd, setTouchEnd] = useState({ x: null, y: null });
+
+  const minSwipeDistance = 50; 
+
+  const onTouchStart = (e) => {
+    setTouchEnd({ x: null, y: null });
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchMove = (e) => setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+
+  const onTouchEnd = () => {
+    if (!touchStart.x || !touchEnd.x) return;
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+    
+    if (Math.abs(distanceX) > Math.abs(distanceY)) {
+      if (isLeftSwipe || isRightSwipe) {
+        if (isLeftSwipe && mode === 'STREAM') setMode('MATRIX');
+        if (isRightSwipe && mode === 'MATRIX') setMode('STREAM');
+      }
+    }
+  };
 
   // Собираем только задачи с датами и сортируем их от ближайших к дальним
   const scheduledTasks = tasks
@@ -92,7 +118,12 @@ export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shap
       </div>
 
       {/* Содержимое */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-8 custom-scrollbar">
+      <div 
+        className="flex-1 overflow-y-auto p-4 flex flex-col gap-8 custom-scrollbar"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         
         {mode === 'STREAM' ? (
           Object.keys(streamGroups).length === 0 ? (

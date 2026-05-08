@@ -6,7 +6,7 @@ export function ScheduleModal({ task, onClose, onSave, shapePrimary, textMainHex
   const [time, setTime] = useState(task.scheduledTime || '');
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ zIndex: 9999 }}>
       <div className={`w-full max-w-xs bg-[var(--bg-panel)] border border-[var(--os-accent-1)] p-4 shadow-[0_0_20px_rgba(6,182,212,0.2)] ${shapePrimary}`}>
         <div className="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
           <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: textMainHex }}>Schedule_Task</span>
