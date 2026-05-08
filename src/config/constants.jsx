@@ -14,7 +14,15 @@ export const DICT = {
     manual: 'ReadMe',
     settings: 'Системные параметры',
     emptyMem: 'Память свободна',
-    emptyCryo: 'Отсек пуст'
+    emptyCryo: 'Отсек пуст',
+    temporal: 'Temporal_Flux',
+    overload: 'SYSTEM_OVERLOAD',
+    overloadMsg: 'Active RAM is full. Cannot move task:',
+    overloadPrompt: 'Would you like to move it to CRYO storage instead?',
+    moveToCryo: 'Move_To_Cryo',
+    cancel: 'Cancel',
+    streamMode: 'Stream',
+    matrixMode: 'Matrix'
   },
   human: {
     ram: 'В фокусе',
@@ -29,7 +37,15 @@ export const DICT = {
     manual: 'Как использовать',
     settings: 'Настройки',
     emptyMem: 'Нет текущих задач',
-    emptyCryo: 'Список пуст'
+    emptyCryo: 'Список пуст',
+    temporal: 'Календарь',
+    overload: 'Лимит фокуса',
+    overloadMsg: 'Слоты фокуса заполнены. Невозможно добавить:',
+    overloadPrompt: 'Хотите отложить эту задачу на потом?',
+    moveToCryo: 'Отложить',
+    cancel: 'Отмена',
+    streamMode: 'Ближайшие',
+    matrixMode: 'Сетка'
   }
 };
 

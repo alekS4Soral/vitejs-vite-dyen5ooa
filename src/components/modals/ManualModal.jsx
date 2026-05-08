@@ -23,7 +23,7 @@ export function ManualModal({ closeModals, t, textMainHex, textMutedHex, shapePr
 
         <div className="flex flex-col gap-2">
           <div className="font-bold" style={{ color: 'var(--os-accent-1)' }}>2. {t('ram')} (Слоты фокуса)</div>
-          <p style={{ color: textMutedHex }}>То, что ты делаешь прямо сейчас. Жесткий лимит — 2 слота. Если пытаешься взять третью задачу, система не даст этого сделать, пока не освободишь память.</p>
+          <p style={{ color: textMutedHex }}>То, что ты делаешь прямо сейчас. Жесткий лимит — 2 слота. Если пытаешься взять третью задачу, система не даст этого сделать, пока не освободишь память (появится предупреждение).</p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -37,7 +37,12 @@ export function ManualModal({ closeModals, t, textMainHex, textMutedHex, shapePr
         </div>
         
         <div className="flex flex-col gap-2">
-          <div className="font-bold" style={{ color: 'var(--os-accent-1)' }}>5. Daemons (Трекеры)</div>
+          <div className="font-bold" style={{ color: 'var(--os-accent-1)' }}>5. {t('temporal')} (Расписание)</div>
+          <p style={{ color: textMutedHex }}>Модуль планирования. Позволяет привязать любую задачу из любого модуля к конкретной дате. Отображается в виде матрицы дат (сетка) или в режиме потока (ближайшие).</p>
+        </div>
+        
+        <div className="flex flex-col gap-2">
+          <div className="font-bold" style={{ color: 'var(--os-accent-1)' }}>6. Daemons (Трекеры)</div>
           <p style={{ color: textMutedHex }}>Три верхние плашки для отслеживания рутины (шаги, вода, что угодно). Настраиваются индивидуально через меню параметров.</p>
         </div>
       </div>

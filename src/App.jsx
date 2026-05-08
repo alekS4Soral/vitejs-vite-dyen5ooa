@@ -224,6 +224,7 @@ if (systemState === 'SAFE_MODE') {
   // --- ЭКРАН ФОКУСА (РЕНДЕР) ---
   if (systemState === 'COMPILING') {
     return (
+      <>
       <CompilingScreen
         activeColliderTask={activeColliderTask}
         textMainHex={textMainHex}
@@ -262,6 +263,17 @@ if (systemState === 'SAFE_MODE') {
           textMutedHex={textMutedHex} 
         />
       </CompilingScreen>
+      {schedulingTask && (
+        <ScheduleModal
+          task={schedulingTask}
+          onClose={() => setSchedulingTask(null)}
+          onSave={updateTaskSchedule}
+          shapePrimary={shapePrimary}
+          textMainHex={textMainHex}
+          textMutedHex={textMutedHex}
+        />
+      )}
+      </>
     );
   }
 
@@ -303,7 +315,7 @@ if (systemState === 'SAFE_MODE') {
 
   <button onClick={() => setIsTemporalOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
     <Calendar className="w-4 h-4" style={{ color: 'var(--os-accent-2)' }} />
-    TEMPORAL_FLUX
+    {t('temporal')}
   </button>
 </div>
 
@@ -370,6 +382,7 @@ if (systemState === 'SAFE_MODE') {
     shapeSecondary={shapeSecondary}
     textMainHex={textMainHex}
     textMutedHex={textMutedHex}
+    t={t}
   />
 )}
 
@@ -379,19 +392,19 @@ if (systemState === 'SAFE_MODE') {
           <div className={`w-full max-w-sm bg-[var(--bg-panel)] border border-[var(--border-strong)] p-6 flex flex-col gap-6 ${shapePrimary}`}>
             <div className="flex items-center gap-3 border-b border-[var(--border-strong)] pb-4">
               <ShieldAlert className="w-6 h-6 text-red-500" />
-              <div className="text-sm tracking-widest font-bold uppercase text-red-500">SYSTEM_OVERLOAD</div>
+              <div className="text-sm tracking-widest font-bold uppercase text-red-500">{t('overload')}</div>
             </div>
             
             <div className="text-sm opacity-90" style={{ color: textMainHex }}>
-              Active RAM is full (2/2). Cannot move task:
+            {t('overloadMsg')}
               <strong className="block mt-2 font-bold" style={{ color: 'var(--os-accent-1)' }}>{ramOverflowTask.title}</strong>
             </div>
             <div className="text-xs uppercase opacity-70" style={{ color: textMutedHex }}>
-              Would you like to move it to CRYO storage instead?
+            {t('overloadPrompt')}
             </div>
             
             <div className="flex gap-3 justify-end mt-2">
-              <button onClick={() => setRamOverflowTask(null)} className={`px-4 py-2 text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] ${shapeSecondary}`} style={{ color: textMainHex }}>Cancel</button>
+            <button onClick={() => setRamOverflowTask(null)} className={`px-4 py-2 text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] ${shapeSecondary}`} style={{ color: textMainHex }}>{t('cancel')}</button>
               <button 
                 onClick={() => {
                   moveTask(ramOverflowTask.id, 'CRYO');
@@ -400,7 +413,7 @@ if (systemState === 'SAFE_MODE') {
                 className={`flex gap-2 items-center px-4 py-2 text-xs uppercase font-bold tracking-widest bg-[var(--bg-panel)] border border-[var(--border-strong)] active:opacity-80 ${shapeSecondary}`} 
                 style={{ color: 'var(--os-accent-1)' }}
               >
-                <Snowflake className="w-3 h-3" /> Move_To_Cryo
+                                <Snowflake className="w-3 h-3" /> {t('moveToCryo')}
               </button>
             </div>
           </div>

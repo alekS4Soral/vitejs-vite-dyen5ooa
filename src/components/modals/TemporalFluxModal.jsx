@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shapeSecondary, textMainHex, textMutedHex }) {
+export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shapeSecondary, textMainHex, textMutedHex, t }) {
   const [mode, setMode] = useState('STREAM');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
@@ -66,7 +66,7 @@ export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shap
       <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex justify-between items-center mt-safe shrink-0">
         <div className="flex items-center gap-3">
           <Calendar className="w-5 h-5" style={{ color: 'var(--os-accent-2)' }} />
-          <div className="hidden sm:block text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>Temporal_Flux</div>
+          <div className="hidden sm:block text-xs tracking-widest uppercase font-bold" style={{ color: textMainHex }}>{t('temporal')}</div>
         </div>
 
         <div className={`flex bg-[var(--bg-base)] border border-[var(--border-strong)] p-1 text-[9px] sm:text-[10px] font-bold ${shapeSecondary}`}>
@@ -75,14 +75,14 @@ export function TemporalFluxModal({ tasks, moveTask, onClose, shapePrimary, shap
             className={`px-3 py-1 uppercase tracking-widest transition-all ${shapeSecondary} ${mode === 'STREAM' ? 'bg-[var(--bg-button)]' : 'opacity-50 hover:opacity-80'}`}
             style={{ color: mode === 'STREAM' ? 'var(--os-accent-1)' : textMainHex }}
           >
-            Stream
+            {t('streamMode') || 'Stream'}
           </button>
           <button 
             onClick={() => setMode('MATRIX')}
             className={`px-3 py-1 uppercase tracking-widest transition-all ${shapeSecondary} ${mode === 'MATRIX' ? 'bg-[var(--bg-button)]' : 'opacity-50 hover:opacity-80'}`}
             style={{ color: mode === 'MATRIX' ? 'var(--os-accent-1)' : textMainHex }}
           >
-            Matrix
+            {t('matrixMode') || 'Matrix'}
           </button>
         </div>
 
