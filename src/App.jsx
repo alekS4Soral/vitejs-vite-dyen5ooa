@@ -1,124 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Power, ShieldAlert, Cpu, Snowflake, Zap, Terminal, Database, Activity, CheckSquare, Square, Pause, X, Battery, Droplet, SquareActivity, Archive, Settings, Edit2, RotateCcw, BookOpen, Heart, Target, Coffee, Star, Flame, Wind, ArrowUpDown } from 'lucide-react';
-
-// --- СЛОВАРИ ТЕРМИНОВ ---
-const DICT = {
-  system: {
-    ram: 'Active RAM',
-    cryo: 'Cryo-Storage',
-    buffer: 'Latent Space',
-    archive: 'Кристаллизация',
-    safeMode: 'Система в гибернации',
-    render: 'Рендер',
-    compile: 'ИЗОЛЯЦИЯ',
-    drop: 'Drop',
-    inject: 'inject_node',
-    manual: 'ReadMe',
-    settings: 'Системные параметры',
-    emptyMem: 'Память свободна',
-    emptyCryo: 'Отсек пуст'
-  },
-  human: {
-    ram: 'В фокусе',
-    cryo: 'Отложено',
-    buffer: 'Входящие задачи',
-    archive: 'Выполненные',
-    safeMode: 'Режим отдыха',
-    render: 'Начать',
-    compile: 'В ПРОЦЕССЕ',
-    drop: 'Удалить',
-    inject: 'Добавить задачу',
-    manual: 'Как использовать',
-    settings: 'Настройки',
-    emptyMem: 'Нет текущих задач',
-    emptyCryo: 'Список пуст'
-  }
-};
-
-const DEFAULT_TASKS = [];
-const DEFAULT_LOG = [];
-
-// Карта доступных иконок для кастомизации
-const ICON_MAP = {
-  SquareActivity, Droplet, Battery, Activity, Cpu, Snowflake, Zap, Terminal, Database, Archive, Heart, Target, Coffee, Star, Flame
-};
-
-const DAEMON_COLORS = { d1: '#a3e635', d2: '#22d3ee', d3: '#f97316' };
-
-const DAEMONS_INIT = {
-  d1: { label: 'KINEMATICS', current: 0, max: 10000, step: 1000, iconName: 'SquareActivity' },
-  d2: { label: 'COOLANT', current: 0, max: 2000, step: 250, iconName: 'Droplet' },
-  d3: { label: 'HARDWARE', current: 0, max: 1, step: 1, iconName: 'Battery' }
-};
-
-// --- ГЕОМЕТРИЧЕСКИЕ ПРОТОКОЛЫ ---
-const SHAPES = {
-  diag: { name: 'Tech', primary: 'rounded-tl-2xl rounded-br-2xl rounded-tr-sm rounded-bl-sm', secondary: 'rounded-tr-2xl rounded-bl-2xl rounded-tl-sm rounded-br-sm' },
-  sharp: { name: 'Strict', primary: 'rounded-none', secondary: 'rounded-none' },
-  soft: { name: 'Bio', primary: 'rounded-2xl', secondary: 'rounded-xl' }
-};
+import { DICT, DEFAULT_TASKS, DEFAULT_LOG, ICON_MAP, DAEMON_COLORS, DAEMONS_INIT, SHAPES } from './config/constants';
+import { useSystemConfig } from './hooks/useSystemConfig';
+import { useDaemons } from './hooks/useDaemons';
+import { useCoreMemory } from './hooks/useCoreMemory';
 
 export default function App() {
-  // --- МОДУЛИ ПАМЯТИ ---
-  const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('cc_tasks')) || DEFAULT_TASKS);
-  const [renderLog, setRenderLog] = useState(() => JSON.parse(localStorage.getItem('cc_log')) || DEFAULT_LOG);
-  
-  const [systemState, setSystemState] = useState(() => localStorage.getItem('cc_state') || 'NORMAL'); 
-  const [activeColliderTask, setActiveColliderTask] = useState(() => JSON.parse(localStorage.getItem('cc_active_task')) || null);
-
-  const [daemons, setDaemons] = useState(() => {
-    const saved = localStorage.getItem('cc_daemons');
-    const lastDate = localStorage.getItem('cc_date');
-    const today = new Date().toDateString();
-    
-    if (lastDate !== today) {
-      localStorage.setItem('cc_date', today);
-      return DAEMONS_INIT; 
-    }
-
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const restored = { ...DAEMONS_INIT };
-      Object.keys(parsed).forEach(key => {
-        if (restored[key]) {
-          restored[key] = {
-            ...restored[key],
-            current: parsed[key].current || 0,
-            label: parsed[key].label || DAEMONS_INIT[key].label,
-            max: parsed[key].max || DAEMONS_INIT[key].max,
-            step: parsed[key].step || DAEMONS_INIT[key].step,
-            iconName: parsed[key].iconName || DAEMONS_INIT[key].iconName
-          };
-        }
-      });
-      return restored;
-    }
-    return DAEMONS_INIT;
-  });
-
-  const [colorMode, setColorMode] = useState(() => localStorage.getItem('cc_mode') || 'dark');
-  const [terminology, setTerminology] = useState(() => localStorage.getItem('cc_term') || 'system');
-  const [uiShape, setUiShape] = useState(() => localStorage.getItem('cc_shape') || 'diag');
-  
-  // Параметры дизайна
-  const [colorStyle, setColorStyle] = useState(() => localStorage.getItem('cc_color_style') || 'flat');
-  const [accent1, setAccent1] = useState(() => localStorage.getItem('cc_accent1') || '#06b6d4');
-  const [accent2, setAccent2] = useState(() => localStorage.getItem('cc_accent2') || '#a855f7');
-  const [glowLevel, setGlowLevel] = useState(() => Number(localStorage.getItem('cc_glow')) || 20);
-
-  // Синхронизация с чипом
-  useEffect(() => { localStorage.setItem('cc_tasks', JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem('cc_log', JSON.stringify(renderLog)); }, [renderLog]);
-  useEffect(() => { localStorage.setItem('cc_state', systemState); }, [systemState]);
-  useEffect(() => { localStorage.setItem('cc_active_task', JSON.stringify(activeColliderTask)); }, [activeColliderTask]);
-  useEffect(() => { localStorage.setItem('cc_daemons', JSON.stringify(daemons)); }, [daemons]);
-  useEffect(() => { localStorage.setItem('cc_mode', colorMode); }, [colorMode]);
-  useEffect(() => { localStorage.setItem('cc_term', terminology); }, [terminology]);
-  useEffect(() => { localStorage.setItem('cc_shape', uiShape); }, [uiShape]);
-  useEffect(() => { localStorage.setItem('cc_color_style', colorStyle); }, [colorStyle]);
-  useEffect(() => { localStorage.setItem('cc_accent1', accent1); }, [accent1]);
-  useEffect(() => { localStorage.setItem('cc_accent2', accent2); }, [accent2]);
-  useEffect(() => { localStorage.setItem('cc_glow', glowLevel); }, [glowLevel]);
+  const { colorMode, setColorMode, terminology, setTerminology, uiShape, setUiShape, colorStyle, setColorStyle, accent1, setAccent1, accent2, setAccent2, glowLevel, setGlowLevel } = useSystemConfig();
+  const { daemons, interactDaemon, updateDaemonConfig } = useDaemons();
+  const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress } = useCoreMemory();
 
   const isDark = colorMode === 'dark';
   const textMainHex = isDark ? '#d4d4d8' : '#27272a';
@@ -311,18 +201,6 @@ export default function App() {
   const closeModals = () => { window.history.back(); };
 
   // --- ЛОГИКА ЗАДАЧ ---
-  const moveTask = (taskId, targetState) => {
-    setTasks(prev => {
-      const activeRamCount = prev.filter(t => t.state === 'ACTIVE_RAM').length;
-      return prev.map(task => {
-        if (task.id === taskId) {
-          if (targetState === 'ACTIVE_RAM' && task.state !== 'ACTIVE_RAM' && activeRamCount >= 2) return task;
-          return { ...task, state: targetState };
-        }
-        return task;
-      });
-    });
-  };
 
   const createNewTask = (e) => {
     if (e.key === 'Enter' && newTaskInput.trim()) {
@@ -356,38 +234,7 @@ export default function App() {
     if (e.key === 'Escape') setEditingNodeId(null);
   };
 
-  const restoreFromArchive = (taskId) => {
-    const taskToRestore = renderLog.find(t => t.id === taskId);
-    if (taskToRestore) {
-      setRenderLog(prev => prev.filter(t => t.id !== taskId));
-      setTasks(prev => [...prev, { ...taskToRestore, state: 'CRYO', progress: 0, subtasks: [] }]);
-    }
-  };
-
   // --- ЛОГИКА РЕНДЕРА (ФОКУСА) ---
-  const startCompilation = (task) => {
-    setActiveColliderTask(task);
-    setSystemState('COMPILING');
-  };
-
-  const exitCompilation = (targetState) => {
-    setTasks(prev => prev.map(t => t.id === activeColliderTask.id ? { ...activeColliderTask, state: targetState } : t));
-    setActiveColliderTask(null);
-    setSystemState('NORMAL');
-  };
-
-  const finishCompilation = () => {
-    const completedTask = {
-      ...activeColliderTask,
-      completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      progress: 100
-    };
-    setRenderLog(prev => [completedTask, ...prev]);
-    setTasks(prev => prev.filter(t => t.id !== activeColliderTask.id));
-    setActiveColliderTask(null);
-    setSystemState('NORMAL');
-  };
-
   const createSubtask = (e) => {
     if (e.key === 'Enter' && newSubtaskInput.trim()) {
       setActiveColliderTask(prev => ({
@@ -396,29 +243,6 @@ export default function App() {
       }));
       setNewSubtaskInput('');
     }
-  };
-
-  const toggleSubtask = (subId) => {
-    setActiveColliderTask(prev => {
-      const updatedSubtasks = prev.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s);
-      const doneCount = updatedSubtasks.filter(s => s.done).length;
-      const newProgress = updatedSubtasks.length > 0 ? Math.round((doneCount / updatedSubtasks.length) * 100) : prev.progress;
-      return { ...prev, subtasks: updatedSubtasks, progress: newProgress };
-    });
-  };
-
-  const deleteSubtask = (subId) => {
-    setActiveColliderTask(prev => {
-      const updatedSubtasks = prev.subtasks.filter(s => s.id !== subId);
-      const doneCount = updatedSubtasks.filter(s => s.done).length;
-      // Пересчитываем процент выполнения или оставляем текущий, если задач больше нет
-      const newProgress = updatedSubtasks.length > 0 ? Math.round((doneCount / updatedSubtasks.length) * 100) : prev.progress;
-      return { ...prev, subtasks: updatedSubtasks, progress: newProgress };
-    });
-  };
-
-  const updateProgress = (amount) => {
-    setActiveColliderTask(prev => ({ ...prev, progress: Math.min(100, Math.max(0, prev.progress + amount)) }));
   };
 
   // --- ЛОГИКА РЕДАКТИРОВАНИЯ И СОРТИРОВКИ ПОДЗАДАЧ ---
@@ -475,22 +299,6 @@ export default function App() {
       
       return { ...prev, subtasks };
     });
-  };
-
-  // --- ЛОГИКА ДЕМОНОВ ---
-  const interactDaemon = (key) => {
-    setDaemons(prev => {
-      const daemon = prev[key];
-      if (daemon.current >= daemon.max) return { ...prev, [key]: { ...daemon, current: 0 } };
-      return { ...prev, [key]: { ...daemon, current: Math.min(daemon.max, daemon.current + Number(daemon.step)) } };
-    });
-  };
-
-  const updateDaemonConfig = (key, field, value) => {
-    setDaemons(prev => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: value }
-    }));
   };
 
   const totalRenderedData = renderLog.reduce((sum, task) => sum + task.weight, 0);
