@@ -70,7 +70,7 @@ export function BufferModal({
               )}
               {task.scheduledDate && (
                 <div className="text-[9px] mt-2 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent-2)' }}>
-                  SYNC: {task.scheduledDate} {task.scheduledTime}
+                   T-FLUX: {task.scheduledDate} {task.scheduledTime}
                 </div>
               )}
             </div>

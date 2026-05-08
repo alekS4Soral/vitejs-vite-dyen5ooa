@@ -1,4 +1,4 @@
-import { Activity, Zap, Edit2, CheckSquare, Square, RotateCcw, Snowflake, ArrowUpDown, X } from 'lucide-react';
+import { Activity, Zap, Edit2, CheckSquare, Square, RotateCcw, Snowflake, ArrowUpDown, X, Clock } from 'lucide-react';
 
 export function CompilingScreen({ 
   activeColliderTask, textMainHex, textMutedHex, shapePrimary, shapeSecondary,
@@ -7,7 +7,7 @@ export function CompilingScreen({
   isSubtasksEditMode, setIsSubtasksEditMode, startEditSubtask, editingSubtaskId,
   editSubtaskValue, setEditSubtaskValue, saveEditSubtask, handleSubtaskEditKeyDown,
   draggedSubtaskId, handleDragStart, handleDragEnd, handleDragOver, handleDrop,
-  children 
+  onScheduleTask, children 
 }) {
   if (!activeColliderTask) return null;
 
@@ -32,12 +32,24 @@ export function CompilingScreen({
       
       <div className={`bg-[var(--bg-panel)] border border-[var(--border-strong)] p-6 w-full max-w-2xl relative z-10 ${shapePrimary}`}>
         <div className="text-[10px] md:text-xs tracking-widest mb-3 uppercase flex justify-between" style={{ color: textMutedHex }}>
-          <span>[ {activeColliderTask.id} ] {t('compile')}</span>
+          <div className="flex items-center gap-2">
+            <span>[ {activeColliderTask.id} ] {t('compile')}</span>
+            <button 
+              onClick={() => onScheduleTask && onScheduleTask(activeColliderTask)} 
+              className="p-1 hover:text-[var(--os-accent-1)] transition-colors opacity-70 hover:opacity-100"
+            >
+              <Clock className="w-3 h-3" />
+            </button>
+          </div>
           <span style={{ color: 'var(--os-accent-1)' }}>{activeColliderTask.progress}%</span>
         </div>
-        <div className="text-lg md:text-2xl tracking-wide mb-6" style={{ color: textMainHex }}>{activeColliderTask.title}</div>
-        
-        <div className="w-full h-1 mb-4 relative bg-[var(--bg-button)] rounded-full overflow-hidden">
+        <div className="text-lg md:text-2xl tracking-wide font-bold" style={{ color: textMainHex }}>{activeColliderTask.title}</div>
+        {activeColliderTask.scheduledDate && (
+          <div className="text-[10px] mt-1 mb-4 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent-2)' }}>
+            T-FLUX: {activeColliderTask.scheduledDate} {activeColliderTask.scheduledTime}
+          </div>
+        )}
+        <div className={`w-full h-1 mb-4 relative bg-[var(--bg-button)] rounded-full overflow-hidden ${!activeColliderTask.scheduledDate ? 'mt-6' : ''}`}>
           <div className="absolute top-0 left-0 h-full transition-all duration-300 glow-accent" style={{ background: 'var(--os-accent-bg)', width: `${activeColliderTask.progress}%` }} />
         </div>
         

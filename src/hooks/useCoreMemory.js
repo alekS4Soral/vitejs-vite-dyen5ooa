@@ -6,6 +6,7 @@ export function useCoreMemory() {
   const [renderLog, setRenderLog] = useState(() => JSON.parse(localStorage.getItem('cc_log')) || DEFAULT_LOG);
   const [systemState, setSystemState] = useState(() => localStorage.getItem('cc_state') || 'NORMAL'); 
   const [activeColliderTask, setActiveColliderTask] = useState(() => JSON.parse(localStorage.getItem('cc_active_task')) || null);
+  const [ramOverflowTask, setRamOverflowTask] = useState(null);
 
   useEffect(() => { localStorage.setItem('cc_tasks', JSON.stringify(tasks)); }, [tasks]);
   useEffect(() => { localStorage.setItem('cc_log', JSON.stringify(renderLog)); }, [renderLog]);
@@ -15,9 +16,16 @@ export function useCoreMemory() {
   const moveTask = (taskId, targetState) => {
     setTasks(prev => {
       const activeRamCount = prev.filter(t => t.state === 'ACTIVE_RAM').length;
+       
+      // Check for overflow
+      const targetTask = prev.find(t => t.id === taskId);
+      if (targetTask && targetState === 'ACTIVE_RAM' && targetTask.state !== 'ACTIVE_RAM' && activeRamCount >= 2) {
+        setRamOverflowTask(targetTask);
+        return prev;
+      }
+      
       return prev.map(task => {
         if (task.id === taskId) {
-          if (targetState === 'ACTIVE_RAM' && task.state !== 'ACTIVE_RAM' && activeRamCount >= 2) return task;
           return { ...task, state: targetState };
         }
         return task;
@@ -30,6 +38,9 @@ export function useCoreMemory() {
     setTasks(prev => prev.map(task => 
       task.id === taskId ? { ...task, scheduledDate: date, scheduledTime: time } : task
     ));
+    setActiveColliderTask(prev => 
+      prev && prev.id === taskId ? { ...prev, scheduledDate: date, scheduledTime: time } : prev
+    );
   };
   
   const restoreFromArchive = (taskId) => {
@@ -87,6 +98,7 @@ export function useCoreMemory() {
 
   return {
     tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask,
-    moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule
+    moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule,
+    ramOverflowTask, setRamOverflowTask
   };
 }

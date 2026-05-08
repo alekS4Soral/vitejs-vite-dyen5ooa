@@ -33,7 +33,14 @@ export function ActiveRamPanel({
                     style={{ color: textMainHex }}
                   />
                 ) : (
-                  <div className="text-sm md:text-base font-semibold break-words pr-2" style={{ color: textMainHex }}>{task.title}</div>
+                  <div>
+                    <div className="text-sm md:text-base font-semibold break-words pr-2" style={{ color: textMainHex }}>{task.title}</div>
+                    {task.scheduledDate && (
+                      <div className="text-[9px] mt-2 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent-2)' }}>
+                        T-FLUX: {task.scheduledDate} {task.scheduledTime}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex gap-2">

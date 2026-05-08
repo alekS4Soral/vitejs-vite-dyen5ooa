@@ -14,29 +14,40 @@ export function CryoStoragePanel({
       
       <div className="flex flex-col gap-2">
         {cryoTasks.map(task => (
-          <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-3 opacity-70 active:opacity-100 transition-all ${shapePrimary}`}>
-            <div className="flex gap-2">
-  <button 
-    onClick={() => onScheduleTask(task)} 
-    className="p-1 hover:text-[var(--os-accent-1)] opacity-50 hover:opacity-100 transition-all"
-  >
-    <Clock className="w-3 h-3"/>
-  </button>
-  <button onClick={() => startEditNode(task)} className="p-1 opacity-50 hover:opacity-100">
-    <Edit2 className="w-3 h-3"/>
-  </button>
-</div>
-            {editingNodeId === task.id ? (
-               <input 
-                 autoFocus value={editInputValue} onChange={(e) => setEditInputValue(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={saveEditNode}
-                 className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs w-full font-mono mb-3"
-                 style={{ color: textMainHex }}
-               />
-            ) : (
-              <div className="text-xs md:text-sm mb-3 opacity-80" style={{ color: textMainHex }}>{task.title}</div>
-            )}
-            
-            <div className="flex justify-between border-t border-[var(--border-color)] pt-2 items-center">
+          <div key={task.id} className={`bg-[var(--bg-panel)] border border-[var(--border-color)] p-3 opacity-70 hover:opacity-100 transition-all ${shapePrimary}`}>
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1 min-w-0">
+              {editingNodeId === task.id ? (
+                 <input 
+                   autoFocus value={editInputValue} onChange={(e) => setEditInputValue(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={saveEditNode}
+                   className="bg-transparent border-b border-[var(--border-strong)] outline-none text-xs w-full font-mono mb-3"
+                   style={{ color: textMainHex }}
+                 />
+              ) : (
+                <div className="mb-3">
+                  <div className="text-xs md:text-sm font-semibold truncate" style={{ color: textMainHex }}>{task.title}</div>
+                  {task.scheduledDate && (
+                    <div className="text-[9px] mt-2 font-bold tracking-widest uppercase" style={{ color: 'var(--os-accent-2)' }}>
+                      T-FLUX: {task.scheduledDate} {task.scheduledTime}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <button 
+                onClick={() => onScheduleTask(task)} 
+                className="p-1 hover:text-[var(--os-accent-1)] opacity-50 hover:opacity-100 transition-all"
+              >
+                <Clock className="w-3 h-3"/>
+              </button>
+              <button onClick={() => startEditNode(task)} className="p-1 opacity-50 hover:opacity-100 transition-all" style={{ color: textMainHex }}>
+                <Edit2 className="w-3 h-3"/>
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex justify-between border-t border-[var(--border-color)] pt-2 items-center mt-1">
               <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="text-[10px] uppercase py-1 hover:text-red-500 transition-colors" style={{ color: textMutedHex }}>{t('drop')}</button>
               <button onClick={() => moveTask(task.id, 'ACTIVE_RAM')} className={`text-[10px] uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] px-3 py-1 active:bg-[var(--bg-button-active)] transition-all ${shapeSecondary}`} style={{ color: textMainHex }}>
                 {t('ram')}

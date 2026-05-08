@@ -22,7 +22,7 @@ import { ScheduleModal } from './components/modals/ScheduleModal';
 export default function App() {
   const { isReady, colorMode, setColorMode, terminology, setTerminology, uiShape, setUiShape, colorStyle, setColorStyle, accent1, setAccent1, accent2, setAccent2, glowLevel, setGlowLevel } = useSystemConfig();
   const { daemons, interactDaemon, updateDaemonConfig } = useDaemons();
-  const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule } = useCoreMemory();
+  const { tasks, setTasks, renderLog, setRenderLog, systemState, setSystemState, activeColliderTask, setActiveColliderTask, moveTask, restoreFromArchive, startCompilation, exitCompilation, finishCompilation, toggleSubtask, deleteSubtask, updateProgress, updateTaskSchedule, ramOverflowTask, setRamOverflowTask } = useCoreMemory();
 
   const isDark = colorMode === 'dark';
   const textMainHex = isDark ? '#d4d4d8' : '#27272a';
@@ -294,10 +294,11 @@ if (systemState === 'SAFE_MODE') {
       <main className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto relative">
         
       <div className="flex gap-4 shrink-0">
-  <button onClick={() => setIsBufferOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
-    <Database className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} />
+      <button onClick={() => setIsBufferOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all relative overflow-hidden ${shapePrimary}`} style={{ color: textMainHex }}>
+          {bufferTasks.length > 0 && <span className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center bg-[var(--bg-button)] border-r border-[var(--border-strong)] text-[10px] opacity-70">{bufferTasks.length}</span>}
+          <div className="flex items-center gap-3">    <Database className="w-4 h-4" style={{ color: 'var(--os-accent-1)' }} />
     {t('buffer')}
-    {bufferTasks.length > 0 && <span className="px-2 py-0.5 rounded-sm bg-[var(--bg-button)] text-[10px] ml-2">{bufferTasks.length}</span>}
+    </div>
   </button>
 
   <button onClick={() => setIsTemporalOpen(true)} className={`flex-1 py-4 flex items-center justify-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-strong)] active:bg-[var(--bg-button-active)] uppercase tracking-widest text-xs font-bold transition-all ${shapePrimary}`} style={{ color: textMainHex }}>
@@ -363,6 +364,7 @@ if (systemState === 'SAFE_MODE') {
 {isTemporalOpen && (
   <TemporalFluxModal
     tasks={tasks}
+    moveTask={moveTask}
     onClose={() => setIsTemporalOpen(false)}
     shapePrimary={shapePrimary}
     shapeSecondary={shapeSecondary}
@@ -370,6 +372,41 @@ if (systemState === 'SAFE_MODE') {
     textMutedHex={textMutedHex}
   />
 )}
+
+      {/* --- OVERFLOW RAM MODAL --- */}
+      {ramOverflowTask && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className={`w-full max-w-sm bg-[var(--bg-panel)] border border-[var(--border-strong)] p-6 flex flex-col gap-6 ${shapePrimary}`}>
+            <div className="flex items-center gap-3 border-b border-[var(--border-strong)] pb-4">
+              <ShieldAlert className="w-6 h-6 text-red-500" />
+              <div className="text-sm tracking-widest font-bold uppercase text-red-500">SYSTEM_OVERLOAD</div>
+            </div>
+            
+            <div className="text-sm opacity-90" style={{ color: textMainHex }}>
+              Active RAM is full (2/2). Cannot move task:
+              <strong className="block mt-2 font-bold" style={{ color: 'var(--os-accent-1)' }}>{ramOverflowTask.title}</strong>
+            </div>
+            <div className="text-xs uppercase opacity-70" style={{ color: textMutedHex }}>
+              Would you like to move it to CRYO storage instead?
+            </div>
+            
+            <div className="flex gap-3 justify-end mt-2">
+              <button onClick={() => setRamOverflowTask(null)} className={`px-4 py-2 text-xs uppercase bg-[var(--bg-button)] border border-[var(--border-strong)] ${shapeSecondary}`} style={{ color: textMainHex }}>Cancel</button>
+              <button 
+                onClick={() => {
+                  moveTask(ramOverflowTask.id, 'CRYO');
+                  setRamOverflowTask(null);
+                }} 
+                className={`flex gap-2 items-center px-4 py-2 text-xs uppercase font-bold tracking-widest bg-[var(--bg-panel)] border border-[var(--border-strong)] active:opacity-80 ${shapeSecondary}`} 
+                style={{ color: 'var(--os-accent-1)' }}
+              >
+                <Snowflake className="w-3 h-3" /> Move_To_Cryo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 {/* --- МЕНЮ НАЗНАЧЕНИЯ ДАТЫ --- */}
 {schedulingTask && (
