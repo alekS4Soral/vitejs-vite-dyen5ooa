@@ -331,10 +331,8 @@ if (systemState === 'SAFE_MODE') {
         {/* Пространственный буфер, чтобы Dev/null не перекрывал Крио-задачи */}
         <div className="h-28 shrink-0 pointer-events-none"></div>
 
-        {/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
-        <DevNullConsole 
-          t={t}
-          textMutedHex={textMutedHex}
+{/* --- DEV/NULL КОНСОЛЬ (СБРОС МУСОРА) --- */}
+<DevNullConsole 
           shapePrimary={shapePrimary}
           isDevNullFading={isDevNullFading}
           devNullInput={devNullInput}

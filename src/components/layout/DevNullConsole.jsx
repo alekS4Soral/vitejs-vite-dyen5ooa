@@ -1,25 +1,21 @@
-import { Trash2 } from 'lucide-react';
+import { Wind } from 'lucide-react';
 
 export function DevNullConsole({ 
-  t, textMutedHex, shapePrimary, isDevNullFading, 
-  devNullInput, setDevNullInput, handleDrop 
+  shapePrimary, isDevNullFading, devNullInput, setDevNullInput, handleDevNull 
 }) {
   return (
-    <div 
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
-      className={`mt-10 mb-20 p-8 border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center gap-4 relative overflow-hidden ${isDevNullFading ? 'border-red-500 bg-red-500/10 scale-95 opacity-50' : 'border-[var(--border-color)] opacity-30 hover:opacity-60'} ${shapePrimary}`}
-    >
-      <Trash2 className={`w-8 h-8 ${isDevNullFading ? 'animate-bounce text-red-500' : ''}`} style={{ color: textMutedHex }} />
-      <div className="text-[10px] tracking-[0.5em] uppercase font-bold" style={{ color: textMutedHex }}>Dev/null</div>
-      <input 
-        type="text"
-        value={devNullInput}
-        onChange={(e) => setEditInputValue(e.target.value)} // Здесь может быть лог или просто поле
-        readOnly
-        placeholder="Drop nodes here to terminate"
-        className="bg-transparent border-none outline-none text-[9px] text-center w-full uppercase tracking-widest pointer-events-none"
-      />
+    <div className={`fixed bottom-6 right-6 left-6 md:left-auto md:w-80 z-40 bg-[var(--bg-header)] border border-[var(--border-strong)] p-3 transition-all ${shapePrimary}`}>
+      <div className="flex items-center gap-2 text-[var(--text-muted)]">
+        <Wind className="w-4 h-4 shrink-0" />
+        <input 
+          type="text" 
+          value={devNullInput}
+          onChange={(e) => { if (!isDevNullFading) setDevNullInput(e.target.value) }}
+          onKeyDown={handleDevNull}
+          placeholder="/dev/null (сброс мыслей)..."
+          className={`bg-transparent border-none outline-none text-[10px] md:text-xs w-full font-mono placeholder-[var(--text-muted)] text-[var(--text-muted)] ${isDevNullFading ? 'dev-null-fade' : ''}`}
+        />
+      </div>
     </div>
   );
 }
